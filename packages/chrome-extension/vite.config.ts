@@ -11,14 +11,22 @@ export default defineConfig({
         version: "1.0.0",
         description:
           "Chrome extension recording user behavior for AI agent browsing workflows",
-        action: {
-          default_popup: "src/popup/popup.html",
-        },
+        action: {},
         background: {
           service_worker: "src/background/index.ts",
           type: "module",
         },
-        permissions: ["activeTab", "tabs", "storage", "scripting", "cookies"],
+        permissions: [
+          "activeTab",
+          "tabs",
+          "storage",
+          "scripting",
+          "cookies",
+          "sidePanel",
+        ],
+        side_panel: {
+          default_path: "src/sidepanel/sidepanel.html",
+        },
         host_permissions: ["<all_urls>"],
         content_scripts: [
           {
@@ -38,7 +46,7 @@ export default defineConfig({
       "@shared": resolve(__dirname, "src/shared"),
       "@content": resolve(__dirname, "src/content"),
       "@background": resolve(__dirname, "src/background"),
-      "@popup": resolve(__dirname, "src/popup"),
+      "@sidepanel": resolve(__dirname, "src/sidepanel"),
       "@export": resolve(__dirname, "src/export"),
       "@api": resolve(__dirname, "src/api"),
     },

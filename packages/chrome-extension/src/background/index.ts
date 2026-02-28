@@ -35,6 +35,9 @@ class BackgroundController {
       await this.stateManager.initialize();
       console.log("State manager initialized");
 
+      // Open side panel when extension icon is clicked
+      chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
       this.setupMessageHandler();
       this.setupTabListeners();
       console.log("Background service worker ready");
