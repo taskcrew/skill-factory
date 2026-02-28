@@ -1,17 +1,2 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
-  color: #213547;
-  background: #ffffff;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-}
+@import "tailwindcss";
+@plugin "daisyui";

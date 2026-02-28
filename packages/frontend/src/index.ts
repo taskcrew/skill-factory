@@ -1,14 +1,14 @@
 import index from "./index.html";
 
 const server = Bun.serve({
-  port: 3000,
+  port: Number(process.env.PORT) || 3000,
   routes: {
-    "/": index,
+    "/*": index,
   },
-  development: {
-    hmr: true,
-    console: true,
-  },
+  development:
+    process.env.NODE_ENV !== "production"
+      ? { hmr: true, console: true }
+      : false,
 });
 
 console.log(`Frontend listening on http://localhost:${server.port}`);

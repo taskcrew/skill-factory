@@ -8,8 +8,12 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@tanstack/react-router": "^1.163.3",
+    "bun-plugin-tailwind": "^0.1.2",
+    "daisyui": "^5.5.19",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
     "@types/react": "^19",
