@@ -1,0 +1,12 @@
+{
+  "name": "chrome-extension",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "bun run build:clean && bun run build:js && bun run build:static",
+    "build:clean": "rm -rf dist",
+    "build:js": "bun build src/background.ts src/content.ts src/popup/popup.ts --outdir dist --target browser --splitting",
+    "build:static": "cp manifest.json dist/ && cp src/popup/popup.html src/popup/popup.css dist/popup/",
+    "test": "bun test"
+  }
+}

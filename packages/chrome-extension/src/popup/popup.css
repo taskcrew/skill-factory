@@ -1,0 +1,10 @@
+body {
+  width: 320px;
+  padding: 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}

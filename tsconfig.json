@@ -25,5 +25,11 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  "references": [
+    { "path": "packages/backend" },
+    { "path": "packages/frontend" },
+    { "path": "packages/cc-server" },
+    { "path": "packages/chrome-extension" }
+  ]
 }
