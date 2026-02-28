@@ -6,5 +6,11 @@
     "dev": "bun --hot src/index.ts",
     "start": "bun src/index.ts",
     "test": "bun test"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.73",
+    "hono": "^4.9.7",
+    "pino": "^9.9.5",
+    "zod": "^4.1.11"
   }
 }
