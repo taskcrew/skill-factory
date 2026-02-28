@@ -5,6 +5,7 @@ export const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
+  DATABASE_URL: z.string(),
 });
 
 const result = envSchema.safeParse(process.env);
