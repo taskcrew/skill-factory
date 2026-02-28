@@ -9,13 +9,23 @@ body {
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
     sans-serif;
   font-size: 14px;
-  width: 320px;
+  width: 100%;
+  min-height: 100vh;
   background: #1a1a2e;
   color: #eee;
 }
 
 #app {
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 header {
@@ -151,7 +161,8 @@ button:disabled {
 
 /* Event list */
 .event-list {
-  max-height: 150px;
+  flex: 1;
+  max-height: none;
   overflow-y: auto;
   background: #16213e;
   border-radius: 6px;
