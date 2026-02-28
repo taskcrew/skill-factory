@@ -35,3 +35,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Chrome extension build output
 packages/chrome-extension/dist
+agent-browser-impl.md
