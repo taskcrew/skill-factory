@@ -1,12 +1,23 @@
 {
   "name": "chrome-extension",
+  "version": "1.0.0",
+  "description": "Chrome extension recording user behavior for AI agent browsing workflows",
   "type": "module",
-  "private": true,
   "scripts": {
-    "build": "bun run build:clean && bun run build:js && bun run build:static",
-    "build:clean": "rm -rf dist",
-    "build:js": "bun build src/background.ts src/content.ts src/popup/popup.ts --outdir dist --target browser --splitting",
-    "build:static": "cp manifest.json dist/ && cp src/popup/popup.html src/popup/popup.css dist/popup/",
-    "test": "bun test"
+    "dev": "vite build --watch --mode development",
+    "build": "vite build --mode production",
+    "typecheck": "tsc --noEmit",
+    "zip": "cd dist && zip -r ../skill-factory-recorder.zip . && cd .."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+"@types/chrome": "^0.1.32",
+    "@types/node": "^22.5.5",
+    "dotenv": "^17.2.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "vite-plugin-web-extension": "^4.5.0"
   }
 }

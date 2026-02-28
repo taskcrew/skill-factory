@@ -2,12 +2,65 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Factory Recorder</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <div id="app">
-      <h1>Skill Factory</h1>
+      <header>
+        <h1>Skill Factory Recorder</h1>
+      </header>
+
+      <main>
+        <section id="controls">
+          <button id="recordBtn" class="btn-primary">
+            <span class="icon">&#9899;</span>
+            <span class="text">Start Recording</span>
+          </button>
+          <button id="pauseBtn" class="btn-secondary" disabled>
+            <span class="icon">&#10074;&#10074;</span>
+          </button>
+        </section>
+
+        <section id="status">
+          <div class="status-indicator" data-status="idle">
+            <span class="dot"></span>
+            <span class="label">Ready</span>
+          </div>
+          <div class="event-count">Events: <span id="eventCount">0</span></div>
+        </section>
+
+        <section id="events" class="event-list">
+          <!-- Event items will be inserted here -->
+        </section>
+
+        <section id="export">
+          <h2>Export</h2>
+          <div class="export-buttons">
+            <button class="btn-export" data-format="mcp">MCP Workflow</button>
+          </div>
+        </section>
+
+        <section id="upload">
+          <h2>Upload to Backend</h2>
+          <div class="upload-form">
+            <input
+              type="url"
+              id="apiEndpoint"
+              placeholder="https://api.example.com/recordings"
+            />
+            <input
+              type="password"
+              id="apiKey"
+              placeholder="API Key (optional)"
+            />
+            <button id="uploadBtn" class="btn-secondary">Upload</button>
+          </div>
+        </section>
+      </main>
     </div>
-    <script type="module" src="popup.js"></script>
+
+    <script type="module" src="./popup.ts"></script>
   </body>
 </html>
