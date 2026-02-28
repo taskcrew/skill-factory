@@ -1,0 +1,18 @@
+{
+  "name": "skill-factory",
+  "type": "module",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev:backend": "bun --hot packages/backend/src/index.ts",
+    "dev:frontend": "bun --hot packages/frontend/src/index.ts",
+    "dev:cc-server": "bun --hot packages/cc-server/src/index.ts",
+    "build:chrome-extension": "bun run --cwd packages/chrome-extension build",
+    "docker:cc-server": "docker build -f packages/cc-server/Dockerfile packages/cc-server",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
