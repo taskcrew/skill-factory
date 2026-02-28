@@ -3,6 +3,7 @@ import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import healthRoutes from "./routes/health";
 import { engine } from "./socket";
+import { env } from "./env";
 
 const app = new Hono();
 
@@ -20,7 +21,7 @@ export { app };
 const { websocket } = engine.handler();
 
 export default {
-  port: 3001,
+  port: env.PORT,
   idleTimeout: 30,
   fetch(req: Request, server: any) {
     const url = new URL(req.url);
