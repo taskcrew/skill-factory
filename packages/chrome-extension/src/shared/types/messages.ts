@@ -91,14 +91,14 @@ export interface UpdateSettingsMessage extends BaseMessage {
 // Export messages
 export interface ExportRecordingMessage extends BaseMessage {
   type: MessageType.ExportRecording;
-  format: "mcp";
+  format: "agent-browser";
 }
 
 export interface UploadRecordingMessage extends BaseMessage {
   type: MessageType.UploadRecording;
   endpoint: string;
   apiKey?: string;
-  format?: "raw" | "mcp";
+  format?: "raw" | "agent-browser";
 }
 
 // Data retrieval

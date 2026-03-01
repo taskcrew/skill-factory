@@ -1,6 +1,6 @@
 // Export configuration
 export interface ExportOptions {
-  format: "mcp";
+  format: "agent-browser";
   includeComments: boolean;
   includeWaits: boolean;
   includeScreenshots: boolean;
