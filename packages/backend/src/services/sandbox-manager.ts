@@ -242,10 +242,12 @@ export class SandboxManager {
       Buffer.from(SKILL_MD_CONTENT, "utf-8"),
       `${skillDir}/SKILL.md`,
     );
+    const assetPath = `${skillDir}/assets/${filename}`;
     await sandbox.fs.uploadFile(
       Buffer.from(content, "utf-8"),
-      `${skillDir}/assets/${filename}`,
+      assetPath,
     );
+    await sandbox.fs.setFilePermissions(assetPath, { mode: "755" });
 
     this.log.info(
       { sandboxId, name, filename },
