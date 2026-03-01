@@ -51,6 +51,29 @@ io.on("connection", (socket: Socket) => {
         return;
       }
 
+      // Build system prompt with available tools
+      const memory = [
+        "You are a browser automation agent with `agent-browser` CLI pre-installed.",
+        "",
+        "## Setup — run this FIRST before any browser command:",
+        '  agent-browser connect "$AGENT_BROWSER_CDP"',
+        "",
+        "## Then use these commands:",
+        "  agent-browser open <url>          # Navigate to a URL",
+        "  agent-browser snapshot            # Accessibility tree with @refs (for AI)",
+        "  agent-browser screenshot [path]   # Take a screenshot",
+        "  agent-browser click <@ref>        # Click element by ref from snapshot",
+        "  agent-browser type <@ref> <text>  # Type into element",
+        "  agent-browser fill <@ref> <text>  # Clear and fill element",
+        "  agent-browser press <key>         # Press key (Enter, Tab, etc.)",
+        "  agent-browser eval <js>           # Run JavaScript",
+        "",
+        "## Important:",
+        "- Do NOT install Playwright, puppeteer, or any browser. The remote browser is already running.",
+        "- Always connect first, then use commands.",
+        "- Use @refs from snapshot output to target elements (e.g. agent-browser click @e5).",
+      ].join("\n");
+
       // Call cc-server /execute as SSE
       const upstream = await fetch(`${info.baseUrl}/execute`, {
         method: "POST",
@@ -58,7 +81,7 @@ io.on("connection", (socket: Socket) => {
           "Content-Type": "application/json",
           "x-daytona-preview-token": info.previewToken,
         },
-        body: JSON.stringify({ task, ...executeOpts }),
+        body: JSON.stringify({ task, memory, ...executeOpts }),
       });
 
       if (!upstream.ok) {

@@ -1,12 +1,12 @@
-FROM oven/bun:1-slim
+FROM node:22-slim
 
-# System dependencies needed by Claude Code
+# System dependencies
 RUN apt-get update && apt-get install -y \
-  git bash curl python3 python3-venv wget jq gnupg \
+  git bash curl python3 python3-venv wget jq \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Claude Code CLI globally (the SDK spawns it as a subprocess)
-RUN bun install -g @anthropic-ai/claude-code
+# Install Claude Code CLI + agent-browser globally (need node for agent-browser daemon)
+RUN npm install -g @anthropic-ai/claude-code agent-browser tsx
 
 # Create workspace directory for Claude Code to operate in
 RUN mkdir -p /workspace && chmod 777 /workspace
@@ -14,8 +14,8 @@ RUN mkdir -p /workspace && chmod 777 /workspace
 WORKDIR /app
 
 # Install cc-server dependencies
-COPY package.json bun.lock* ./
-RUN bun install --production --frozen-lockfile || bun install --production
+COPY package.json package-lock.json* ./
+RUN npm install --production
 
 # Copy cc-server source
 COPY src ./src
@@ -31,4 +31,4 @@ ENV PORT=3002
 ENV HOST=0.0.0.0
 
 EXPOSE 3002
-CMD ["bun", "src/index.ts"]
+CMD ["npx", "tsx", "src/index.ts"]

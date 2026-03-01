@@ -107,7 +107,7 @@ sessionsRouter.openapi(createSession, async (c) => {
   try {
     const sandboxEnvVars: Record<string, string> = {};
     if (cdpWsUrl) {
-      sandboxEnvVars.BROWSER_USE_CDP_URL = cdpWsUrl;
+      sandboxEnvVars.AGENT_BROWSER_CDP = cdpWsUrl;
     }
 
     const info = await sandboxManager.createSandbox({

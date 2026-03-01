@@ -16,12 +16,12 @@ const CC_SERVER_PORT = 3002;
 const CC_SERVER_ROOT = resolve(dirname(import.meta.filename), "..", "..");
 
 function buildCcServerImage(): Image {
-  return Image.base("oven/bun:1-slim")
+  return Image.base("node:22-slim")
     .runCommands(
-      // System deps needed by Claude Code
+      // System deps
       "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq && rm -rf /var/lib/apt/lists/*",
-      // Install Claude Code CLI globally — the SDK spawns it as a subprocess
-      "bun install -g @anthropic-ai/claude-code",
+      // Install Claude Code CLI + agent-browser globally
+      "npm install -g @anthropic-ai/claude-code agent-browser tsx",
       // Create a non-root user — Claude Code refuses --dangerously-skip-permissions as root
       "useradd -m -s /bin/bash claude",
       // Create workspace for Claude Code to operate in
@@ -33,7 +33,7 @@ function buildCcServerImage(): Image {
     .workdir("/app")
     .runCommands(
       // Install cc-server dependencies
-      "bun install --production",
+      "npm install --production",
       // Give the non-root user ownership of /app
       "chown -R claude:claude /app",
     )
@@ -99,7 +99,7 @@ export class SandboxManager {
     const sessionId = `cc-server-${sandbox.id}`;
     await sandbox.process.createSession(sessionId);
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
+      command: "runuser -u claude -- bash -c 'cd /app && npx tsx src/index.ts'",
       runAsync: true,
     });
 
@@ -164,7 +164,7 @@ export class SandboxManager {
       // Session may already exist from previous start
     }
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
+      command: "runuser -u claude -- bash -c 'cd /app && npx tsx src/index.ts'",
       runAsync: true,
     });
 
@@ -189,7 +189,7 @@ export class SandboxManager {
     return this.sandboxInfos.get(sandboxId);
   }
 
-  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 30_000): Promise<void> {
+  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 60_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const interval = 1_000;
 
@@ -206,7 +206,7 @@ export class SandboxManager {
         // Server not ready yet
       }
 
-      await Bun.sleep(interval);
+      await new Promise((r) => setTimeout(r, interval));
     }
 
     throw new Error(`cc-server health check timed out after ${timeoutMs}ms`);
