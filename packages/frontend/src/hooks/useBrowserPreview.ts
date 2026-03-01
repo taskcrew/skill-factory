@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-
-const API_BASE = process.env.BACKEND_URL ?? "http://localhost:3001";
+import { BACKEND_URL } from "../config";
 
 interface BrowserPreview {
   liveUrl: string | null;
@@ -17,7 +16,7 @@ export function useBrowserPreview(sessionId: string | null): BrowserPreview {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/sessions/${id}/browser-preview`);
+      const res = await fetch(`${BACKEND_URL}/api/sessions/${id}/browser-preview`);
       if (!res.ok) {
         if (res.status === 404) {
           setLiveUrl(null);

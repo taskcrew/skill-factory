@@ -1,7 +1,6 @@
 import { useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-
-const API_BASE = process.env.BACKEND_URL ?? "http://localhost:3001";
+import { BACKEND_URL } from "../config";
 
 interface SessionResponse {
   id: string;
@@ -32,7 +31,7 @@ export function useSessionApi() {
       if (inflightRef.current) return inflightRef.current;
 
       const promise = (async () => {
-        const res = await fetch(`${API_BASE}/api/sessions`, {
+        const res = await fetch(`${BACKEND_URL}/api/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, initial_message: initialMessage }),
@@ -59,7 +58,7 @@ export function useSessionApi() {
       content: string
     ): Promise<SessionMessageResponse> => {
       const res = await fetch(
-        `${API_BASE}/api/sessions/${sessionId}/messages`,
+        `${BACKEND_URL}/api/sessions/${sessionId}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -74,7 +73,7 @@ export function useSessionApi() {
 
   const fetchSession = useCallback(
     async (sessionId: string): Promise<SessionWithMessages> => {
-      const res = await fetch(`${API_BASE}/api/sessions/${sessionId}`);
+      const res = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}`);
       if (!res.ok) throw new Error(`Failed to fetch session: ${res.status}`);
       return res.json() as Promise<SessionWithMessages>;
     },
