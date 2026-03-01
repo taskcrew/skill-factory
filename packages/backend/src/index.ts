@@ -6,6 +6,7 @@ import { db } from "./db";
 import { buildBaseApp } from "./app";
 import { agentRouter } from "./routes/agent";
 import { sessionsRouter } from "./routes/sessions";
+import { skillsRouter } from "./routes/skills";
 import { engine } from "./socket";
 
 // Ensure sandbox singleton is initialized at startup
@@ -44,6 +45,7 @@ app.use("/*", cors());
 
 app.route("/api/sessions", sessionsRouter);
 app.route("/api/sessions", agentRouter);
+app.route("/api/skills", skillsRouter);
 
 app.doc31("/api/openapi.json", {
   openapi: "3.1.0",

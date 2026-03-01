@@ -26,9 +26,20 @@ export interface SessionMessageTable {
   created_at: Generated<Date>;
 }
 
+export interface SkillTable {
+  id: Generated<string>;
+  name: string;
+  filename: string;
+  content: string;
+  description: string | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 export interface Database {
   sessions: SessionTable;
   session_messages: SessionMessageTable;
+  skills: SkillTable;
 }
 
 export const db = new Kysely<Database>({
