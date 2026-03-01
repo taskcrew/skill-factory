@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: skill_factory
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d skill_factory"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    image: oven/bun:1-alpine
+    working_dir: /app
+    ports: ["3001:3001"]
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: bun --hot packages/backend/src/index.ts
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/skill_factory
+      PORT: "3001"
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: oven/bun:1-alpine
+    working_dir: /app
+    ports: ["3000:3000"]
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command: bun --hot packages/frontend/src/index.ts
+    environment:
+      PORT: "3000"
+
+volumes:
+  pgdata:
+  node_modules:
