@@ -51,10 +51,19 @@ io.on("connection", (socket: Socket) => {
         return;
       }
 
-      // If the session has a skill, append an invisible instruction to the task
+      // If the session has a skill, append an invisible instruction with the absolute script path
       let augmentedTask = task;
       if (session.skill_id) {
-        augmentedTask = `${task}\n\nReplay the recorded browser workflow using the provided skill "browser-recording-replay"`;
+        const skill = await db
+          .selectFrom("skills")
+          .select(["name", "filename"])
+          .where("id", "=", session.skill_id)
+          .executeTakeFirst();
+
+        if (skill) {
+          const scriptPath = `/workspace/.claude/skills/${skill.name}/assets/${skill.filename}`;
+          augmentedTask = `${task}\n\nReplay the recorded browser workflow by running the script at ${scriptPath}. The script is a batch apply — if it fails at any point, read the script, identify which step failed, and continue applying the remaining steps sequentially one at a time from that point forward.`;
+        }
       }
 
       // Build system prompt with available tools
