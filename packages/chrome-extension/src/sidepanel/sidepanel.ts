@@ -64,6 +64,9 @@ class PopupController {
   private barDeleteBtn: HTMLButtonElement;
   private barDoneBtn: HTMLButtonElement;
 
+  // Transcript toggle
+  private transcriptToggle: HTMLButtonElement;
+
   // Voice state
   private voiceRecorder = new VoiceRecorder();
   private isVoiceActive = false;
@@ -114,6 +117,9 @@ class PopupController {
     this.barDeleteBtn = document.getElementById("barDeleteBtn") as HTMLButtonElement;
     this.barDoneBtn = document.getElementById("barDoneBtn") as HTMLButtonElement;
 
+    // Transcript toggle
+    this.transcriptToggle = document.getElementById("transcriptToggle") as HTMLButtonElement;
+
     this.apiEndpointInput.value = MOCK_ENDPOINT;
     this.loadPersistedSettings();
 
@@ -135,6 +141,11 @@ class PopupController {
     this.barVoiceBtn.addEventListener("click", () => this.toggleVoice());
     this.barDeleteBtn.addEventListener("click", () => this.clearRecording());
     this.barDoneBtn.addEventListener("click", () => this.exportRecording("raw-events"));
+
+    // Transcript toggle
+    this.transcriptToggle.addEventListener("click", () => {
+      this.transcriptPanel.classList.toggle("collapsed");
+    });
 
     // Persist settings
     this.apiEndpointInput.addEventListener("input", () => this.saveSettings());

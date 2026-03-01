@@ -22,7 +22,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
 }
@@ -30,7 +31,8 @@ body {
 #app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   position: relative;
 }
 
@@ -293,8 +295,9 @@ header h1 {
   background: var(--card-hover);
 }
 
-/* ── Settings (collapsible) ── */
+/* ── Settings (hidden — persisted via chrome.storage) ── */
 #upload {
+  display: none;
   padding: 0 12px;
   margin-bottom: 12px;
 }
@@ -462,20 +465,49 @@ input[type="password"]:focus {
 
 /* ── Transcript Panel ── */
 .transcript-panel {
-  max-height: 200px;
-  overflow-y: auto;
   background: var(--card);
   border-radius: var(--radius);
-  padding: 8px 12px;
   margin: 0 12px 12px;
+  overflow: hidden;
 }
 
-.transcript-panel h2 {
+.transcript-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+}
+
+.transcript-toggle h2 {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-dim);
-  margin-bottom: 6px;
+  margin: 0;
+}
+
+.transcript-toggle .chevron {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.transcript-panel:not(.collapsed) .transcript-toggle .chevron {
+  transform: rotate(180deg);
+}
+
+.transcript-panel.collapsed .transcript-content {
+  display: none;
+}
+
+.transcript-panel:not(.collapsed) .transcript-content {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0 12px 8px;
 }
 
 .transcript-content {
