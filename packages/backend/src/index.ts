@@ -1,9 +1,36 @@
+import path from "node:path";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
-import { config } from "./config";
-import { logger } from "./logger";
+import { FileMigrationProvider, Migrator } from "kysely";
+import { db } from "./db";
 import { sessionsRouter } from "./routes/sessions";
-import { SandboxManager } from "./services/sandbox-manager";
+
+// Run migrations before starting the server
+const migrator = new Migrator({
+  db,
+  provider: new FileMigrationProvider({
+    fs: await import("node:fs/promises"),
+    path,
+    migrationFolder: path.join(import.meta.dir, "migrations"),
+  }),
+});
+
+const { error, results } = await migrator.migrateToLatest();
+
+results?.forEach((it) => {
+  if (it.status === "Success") {
+    console.log(`Migration "${it.migrationName}" executed successfully`);
+  } else if (it.status === "Error") {
+    console.error(`Migration "${it.migrationName}" failed`);
+  }
+});
+
+if (error) {
+  console.error("Migration failed:", error);
+  process.exit(1);
+}
+
+console.log("Migrations up to date");
 
 const app = new OpenAPIHono();
 
@@ -21,11 +48,9 @@ app.doc31("/api/openapi.json", {
 
 app.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }));
 
-const sandboxManager = new SandboxManager();
-
 const server = Bun.serve({
-  port: config.port,
+  port: Number(process.env.PORT) || 3001,
   fetch: app.fetch,
 });
 
-logger.info({ port: server.port }, "Backend listening");
+console.log(`Backend listening on http://localhost:${server.port}`);

@@ -18,13 +18,11 @@
     "packages/backend": {
       "name": "backend",
       "dependencies": {
-        "@daytonaio/sdk": "^0",
         "@hono/swagger-ui": "^0.5.3",
         "@hono/zod-openapi": "^1.2.2",
         "hono": "^4.12.3",
         "kysely": "^0.28.11",
         "pg": "^8.19.0",
-        "pino": "^9.9.5",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -35,6 +33,7 @@
       "name": "cc-server",
       "dependencies": {
         "@anthropic-ai/claude-code": "^1.0.73",
+        "@daytonaio/sdk": "^0",
         "hono": "^4.9.7",
         "pino": "^9.9.5",
         "zod": "^4.1.11",
