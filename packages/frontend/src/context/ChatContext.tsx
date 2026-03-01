@@ -53,6 +53,7 @@ function chatReducer(state: ChatSession, action: ChatAction): ChatSession {
         role: "user",
         text: action.text,
         toolCalls: [],
+        contentBlocks: [],
         timestamp: Date.now(),
         isStreaming: false,
       };

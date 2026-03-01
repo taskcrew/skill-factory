@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { ToolCall } from "../types/chat.ts";
 
 interface Props {
@@ -52,6 +52,15 @@ function StatusIcon({ status }: { status: string }) {
 
 export function ToolCallCard({ toolCall }: Props) {
   const [open, setOpen] = useState(toolCall.status === "running");
+  const prevStatus = useRef(toolCall.status);
+
+  useEffect(() => {
+    if (prevStatus.current === "running" && toolCall.status !== "running") {
+      setOpen(false);
+    }
+    prevStatus.current = toolCall.status;
+  }, [toolCall.status]);
+
   const inputStr = formatInput(toolCall.name, toolCall.input);
   const resultStr = formatResult(toolCall.result);
 

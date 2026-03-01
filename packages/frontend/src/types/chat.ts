@@ -127,11 +127,24 @@ export interface ToolCall {
   isError: boolean;
 }
 
+export interface TextContentBlock {
+  type: "text";
+  text: string;
+}
+
+export interface ToolCallContentBlock {
+  type: "tool_call";
+  toolCall: ToolCall;
+}
+
+export type ContentItem = TextContentBlock | ToolCallContentBlock;
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
   text: string;
   toolCalls: ToolCall[];
+  contentBlocks: ContentItem[];
   timestamp: number;
   isStreaming: boolean;
 }
