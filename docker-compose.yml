@@ -14,21 +14,32 @@ services:
       timeout: 3s
       retries: 5
 
+  migrate:
+    image: oven/bun:1-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "bun install && bun packages/backend/src/migrate.ts"
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/skill_factory
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     image: oven/bun:1-alpine
     working_dir: /app
     ports: ["3001:3001"]
     volumes:
       - .:/app
-      - node_modules:/app/node_modules
-    command: bun --hot packages/backend/src/index.ts
+    command: sh -c "bun install && bun --hot packages/backend/src/index.ts"
     environment:
       DATABASE_URL: postgres://user:password@postgres:5432/skill_factory
       PORT: "3001"
       NODE_ENV: development
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
     image: oven/bun:1-alpine
@@ -36,11 +47,9 @@ services:
     ports: ["3000:3000"]
     volumes:
       - .:/app
-      - node_modules:/app/node_modules
-    command: bun --hot packages/frontend/src/index.ts
+    command: sh -c "bun install && bun --hot packages/frontend/src/index.ts"
     environment:
       PORT: "3000"
 
 volumes:
   pgdata:
-  node_modules:
