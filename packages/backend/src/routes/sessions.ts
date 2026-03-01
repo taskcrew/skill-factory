@@ -49,13 +49,40 @@ const createSession = createRoute({
 sessionsRouter.openapi(createSession, async (c) => {
   const body = c.req.valid("json");
 
-  // Insert session with no sandbox yet
+  // 1. Create Browser Use session (mandatory)
+  let browserSessionId: string | null = body.browser_session_id ?? null;
+  let cdpWsUrl: string | null = null;
+
+  if (!browserSessionId) {
+    const browserSession = await browserUseService.createSession();
+    browserSessionId = browserSession.id;
+
+    // Poll for CDP WebSocket URL (browser may take a few seconds to start)
+    const pollDeadline = Date.now() + 30_000;
+    const pollInterval = 1_000;
+    while (Date.now() < pollDeadline) {
+      const info = await browserUseService.getSessionInfo(browserSessionId);
+      if (info.cdpWsUrl) {
+        cdpWsUrl = info.cdpWsUrl;
+        break;
+      }
+      await Bun.sleep(pollInterval);
+    }
+
+    if (!cdpWsUrl) {
+      throw new Error(
+        `Browser session ${browserSessionId} created but CDP URL not available within 30s timeout`,
+      );
+    }
+  }
+
+  // 2. Insert session row with browser_session_id
   let session = await db
     .insertInto("sessions")
     .values({
       name: body.name,
       config: JSON.stringify(body.config),
-      browser_session_id: body.browser_session_id ?? null,
+      browser_session_id: browserSessionId,
       sandbox_id: null,
     })
     .returningAll()
@@ -76,9 +103,16 @@ sessionsRouter.openapi(createSession, async (c) => {
       .execute();
   }
 
-  // Auto-provision sandbox
+  // 3. Create Daytona sandbox with CDP URL injected as env var
   try {
-    const info = await sandboxManager.createSandbox();
+    const sandboxEnvVars: Record<string, string> = {};
+    if (cdpWsUrl) {
+      sandboxEnvVars.BROWSER_USE_CDP_URL = cdpWsUrl;
+    }
+
+    const info = await sandboxManager.createSandbox({
+      envVars: sandboxEnvVars,
+    });
 
     session = await db
       .updateTable("sessions")
@@ -92,7 +126,12 @@ sessionsRouter.openapi(createSession, async (c) => {
       .executeTakeFirstOrThrow();
 
     log.info(
-      { sessionId: session.id, sandboxId: info.sandboxId },
+      {
+        sessionId: session.id,
+        sandboxId: info.sandboxId,
+        browserSessionId,
+        hasCdpUrl: !!cdpWsUrl,
+      },
       "Session created with sandbox",
     );
   } catch (err) {

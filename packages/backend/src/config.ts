@@ -6,7 +6,7 @@ const EnvSchema = z.object({
   ANTHROPIC_BASE_URL_OVERRIDE: z.string().url().optional(),
   DAYTONA_API_KEY: z.string().min(1, "DAYTONA_API_KEY is required"),
   DAYTONA_TARGET: z.string().min(1).default("us"),
-  BROWSER_USE_API_KEY: z.string().optional(),
+  BROWSER_USE_API_KEY: z.string().min(1, "BROWSER_USE_API_KEY is required"),
   LOG_LEVEL: z.string().min(1).default("info"),
 });
 
@@ -15,7 +15,7 @@ const parsedEnv = EnvSchema.safeParse(process.env);
 if (!parsedEnv.success) {
   throw new Error(
     `Invalid environment configuration: ${z.prettifyError(parsedEnv.error)}\n` +
-      "Required: ANTHROPIC_API_KEY, DAYTONA_API_KEY",
+      "Required: ANTHROPIC_API_KEY, DAYTONA_API_KEY, BROWSER_USE_API_KEY",
   );
 }
 
@@ -32,7 +32,7 @@ export const config = {
     target: env.DAYTONA_TARGET,
   },
   browserUse: {
-    apiKey: env.BROWSER_USE_API_KEY ?? "",
+    apiKey: env.BROWSER_USE_API_KEY,
   },
   logLevel: env.LOG_LEVEL,
 } as const;
