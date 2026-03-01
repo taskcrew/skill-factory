@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { sql } from "kysely";
 import { db } from "../db";
+import { logger } from "../logger";
 import {
   BrowserPreviewSchema,
   CreateSessionSchema,
@@ -12,7 +13,9 @@ import {
   UpdateSessionSchema,
 } from "../schemas/session";
 import { BrowserUseService } from "../services/browser-use";
+import { sandboxManager } from "../services/sandbox";
 
+const log = logger.child({ service: "sessions" });
 const browserUseService = new BrowserUseService();
 
 export const sessionsRouter = new OpenAPIHono();
@@ -44,16 +47,49 @@ const createSession = createRoute({
 sessionsRouter.openapi(createSession, async (c) => {
   const body = c.req.valid("json");
 
-  const session = await db
+  // Insert session with no sandbox yet
+  let session = await db
     .insertInto("sessions")
     .values({
       name: body.name,
       config: JSON.stringify(body.config),
       browser_session_id: body.browser_session_id ?? null,
-      sandbox_id: body.sandbox_id ?? null,
+      sandbox_id: null,
     })
     .returningAll()
     .executeTakeFirstOrThrow();
+
+  // Auto-provision sandbox
+  try {
+    const info = await sandboxManager.createSandbox();
+
+    session = await db
+      .updateTable("sessions")
+      .set({
+        sandbox_id: info.sandboxId,
+        status: "active",
+        updated_at: sql`now()`,
+      })
+      .where("id", "=", session.id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    log.info(
+      { sessionId: session.id, sandboxId: info.sandboxId },
+      "Session created with sandbox",
+    );
+  } catch (err) {
+    log.error({ err, sessionId: session.id }, "Sandbox creation failed");
+
+    session = await db
+      .updateTable("sessions")
+      .set({ status: "error", updated_at: sql`now()` })
+      .where("id", "=", session.id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return c.json(session as any, 201);
+  }
 
   return c.json(session as any, 201);
 });
@@ -223,14 +259,35 @@ const deleteSession = createRoute({
 sessionsRouter.openapi(deleteSession, async (c) => {
   const { id } = c.req.valid("param");
 
-  const result = await db
-    .deleteFrom("sessions")
+  // Look up session to get sandbox_id before deleting
+  const session = await db
+    .selectFrom("sessions")
+    .select(["id", "sandbox_id"])
     .where("id", "=", id)
     .executeTakeFirst();
 
-  if (result.numDeletedRows === 0n) {
+  if (!session) {
     return c.json({ error: "Session not found" }, 404);
   }
+
+  // Destroy sandbox if one exists
+  if (session.sandbox_id) {
+    try {
+      await sandboxManager.destroySandbox(session.sandbox_id);
+      log.info(
+        { sessionId: id, sandboxId: session.sandbox_id },
+        "Sandbox destroyed",
+      );
+    } catch (err) {
+      // Sandbox may already be gone — log and continue with deletion
+      log.warn(
+        { err, sessionId: id, sandboxId: session.sandbox_id },
+        "Failed to destroy sandbox (may already be gone)",
+      );
+    }
+  }
+
+  await db.deleteFrom("sessions").where("id", "=", id).executeTakeFirst();
 
   return c.body(null, 204);
 });

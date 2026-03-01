@@ -1,9 +1,13 @@
 import path from "node:path";
-import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { FileMigrationProvider, Migrator } from "kysely";
 import { db } from "./db";
+import { buildBaseApp } from "./app";
+import { agentRouter } from "./routes/agent";
 import { sessionsRouter } from "./routes/sessions";
+
+// Ensure sandbox singleton is initialized at startup
+import "./services/sandbox";
 
 // Run migrations before starting the server
 const migrator = new Migrator({
@@ -32,10 +36,10 @@ if (error) {
 
 console.log("Migrations up to date");
 
-const app = new OpenAPIHono();
+const app = buildBaseApp();
 
-app.get("/api/health", (c) => c.json({ status: "ok", service: "backend" }));
 app.route("/api/sessions", sessionsRouter);
+app.route("/api/sessions", agentRouter);
 
 app.doc31("/api/openapi.json", {
   openapi: "3.1.0",
