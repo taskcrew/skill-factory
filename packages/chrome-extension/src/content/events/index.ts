@@ -4,7 +4,7 @@ import { MessageType } from "@shared/types/messages";
 import { SelectorGenerator } from "../selectors";
 import { ClickHandler } from "./click";
 import { DragDropHandler } from "./dragdrop";
-import { HoverHandler } from "./hover";
+
 import { InputHandler } from "./input";
 import { KeyboardHandler } from "./keyboard";
 import { NavigationHandler } from "./navigation";
@@ -52,16 +52,7 @@ export class EventOrchestrator {
     if (settings.captureNavigation) {
       this.handlers.push(new NavigationHandler(emitEvent));
     }
-    if (settings.captureHover) {
-      this.handlers.push(
-        new HoverHandler(
-          emitEvent,
-          this.selectorGenerator,
-          settings.hoverThreshold
-        )
-      );
-    }
-    if (settings.captureDragDrop) {
+if (settings.captureDragDrop) {
       this.handlers.push(
         new DragDropHandler(emitEvent, this.selectorGenerator)
       );
