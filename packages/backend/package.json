@@ -5,6 +5,18 @@
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "start": "bun src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "migrate": "bun src/migrate.ts"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.5.3",
+    "@hono/zod-openapi": "^1.2.2",
+    "hono": "^4.12.3",
+    "kysely": "^0.28.11",
+    "pg": "^8.19.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.18.0"
   }
 }
