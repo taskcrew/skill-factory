@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BACKEND_URL } from "../config";
 
 interface BrowserPreview {
@@ -11,6 +11,12 @@ export function useBrowserPreview(sessionId: string | null): BrowserPreview {
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const liveUrlRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    liveUrlRef.current = liveUrl;
+  }, [liveUrl]);
 
   const fetchPreview = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -35,8 +41,11 @@ export function useBrowserPreview(sessionId: string | null): BrowserPreview {
   }, []);
 
   useEffect(() => {
+    // Reset state on session change
+    setLiveUrl(null);
+    setError(null);
+
     if (!sessionId) {
-      setLiveUrl(null);
       return;
     }
 
@@ -44,13 +53,13 @@ export function useBrowserPreview(sessionId: string | null): BrowserPreview {
 
     // Poll every 5s while we don't have a liveUrl
     const interval = setInterval(() => {
-      if (!liveUrl) {
+      if (!liveUrlRef.current) {
         fetchPreview(sessionId);
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [sessionId, fetchPreview, liveUrl]);
+  }, [sessionId, fetchPreview]);
 
   return { liveUrl, isLoading, error };
 }

@@ -38,25 +38,109 @@ function convertBackendMessages(
     if (msg.type === "user") {
       const content = msg.content as {
         role: string;
-        content: Array<{ type: string; text?: string }>;
+        message?: { role: string; content: Array<{
+          type: string;
+          text?: string;
+          tool_use_id?: string;
+          content?: unknown;
+          is_error?: boolean;
+        }> };
+        content: Array<{
+          type: string;
+          text?: string;
+          tool_use_id?: string;
+          content?: unknown;
+          is_error?: boolean;
+        }>;
       };
-      const text =
-        content.content
-          ?.filter((b) => b.type === "text")
-          .map((b) => b.text ?? "")
-          .join("") ?? "";
-      if (text) {
+      const blocks = content.message?.content ?? content.content ?? [];
+
+      // Plain text user messages
+      const textParts = blocks
+        .filter((b) => b.type === "text")
+        .map((b) => b.text ?? "");
+      if (textParts.length > 0 && textParts.some((t) => t.trim())) {
         result.push({
           id: msg.id,
           role: "user",
-          text,
+          text: textParts.join(""),
           toolCalls: [],
           timestamp: new Date(msg.created_at).getTime(),
           isStreaming: false,
         });
       }
+
+      // tool_result blocks — attach to preceding assistant's tool calls
+      for (const block of blocks) {
+        if (block.type !== "tool_result") continue;
+        for (let i = result.length - 1; i >= 0; i--) {
+          const prev = result[i]!;
+          if (prev.role !== "assistant") continue;
+          const tc = prev.toolCalls.find(
+            (tc) => tc.id === block.tool_use_id
+          );
+          if (!tc) continue;
+          tc.status = block.is_error ? "error" : "completed";
+          tc.isError = block.is_error === true;
+          tc.result =
+            typeof block.content === "string"
+              ? block.content
+              : Array.isArray(block.content)
+                ? (block.content as Array<{ text?: string }>)
+                    .map((c) => c.text ?? "")
+                    .join("\n")
+                : undefined;
+          break;
+        }
+      }
     }
-    // Assistant and other message types can be expanded later
+
+    if (msg.type === "assistant") {
+      const content = msg.content as {
+        type: "assistant";
+        message?: {
+          role: "assistant";
+          content: Array<{
+            type: string;
+            text?: string;
+            id?: string;
+            name?: string;
+            input?: unknown;
+          }>;
+        };
+        content?: Array<{
+          type: string;
+          text?: string;
+          id?: string;
+          name?: string;
+          input?: unknown;
+        }>;
+      };
+      const blocks = content.message?.content ?? content.content ?? [];
+      const text = blocks
+        .filter((b) => b.type === "text")
+        .map((b) => b.text ?? "")
+        .join("\n\n");
+      const toolCalls = blocks
+        .filter((b) => b.type === "tool_use")
+        .map((b) => ({
+          id: b.id!,
+          name: b.name!,
+          input: b.input,
+          status: "completed" as const,
+          isError: false,
+        }));
+      if (text || toolCalls.length > 0) {
+        result.push({
+          id: msg.id,
+          role: "assistant",
+          text,
+          toolCalls,
+          timestamp: new Date(msg.created_at).getTime(),
+          isStreaming: false,
+        });
+      }
+    }
   }
   return result;
 }

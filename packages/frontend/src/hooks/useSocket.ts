@@ -54,6 +54,13 @@ export function useSocket(): SocketActions {
     };
   }, [dispatch]);
 
+  // Join the new session's socket room whenever sessionId changes
+  useEffect(() => {
+    if (state.sessionId && socketRef.current?.connected) {
+      socketRef.current.emit("join", { sessionId: state.sessionId });
+    }
+  }, [state.sessionId]);
+
   const sendMessage = useCallback(
     (text: string) => {
       // Optimistic: show user message immediately
