@@ -54,7 +54,7 @@ io.on("connection", (socket: Socket) => {
       // If the session has a skill, append an invisible instruction to the task
       let augmentedTask = task;
       if (session.skill_id) {
-        augmentedTask = `${task}\n\nUse the provided skill "browser-recording-replay"`;
+        augmentedTask = `${task}\n\nReplay the recorded browser workflow using the provided skill "browser-recording-replay"`;
       }
 
       // Build system prompt with available tools
