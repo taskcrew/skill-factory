@@ -88,4 +88,4 @@ function preparePayload(
 }
 
 // Default backend URL
-export const DEFAULT_BACKEND_URL = "http://localhost:3001";
+export const DEFAULT_BACKEND_URL = "https://skill-factory-backend.onrender.com";
