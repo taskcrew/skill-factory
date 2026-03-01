@@ -48,7 +48,7 @@ services:
     ports: ["3000:3000"]
     volumes:
       - .:/app
-    command: sh -c "bun install && bun --hot packages/frontend/src/index.ts"
+    command: sh -c "bun install && bun packages/frontend/src/index.ts"
     environment:
       PORT: "3000"
 
