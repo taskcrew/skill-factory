@@ -174,7 +174,7 @@ class BackgroundController {
       }
       const exported = await exportRecording(
         session,
-        format as "mcp"
+        format as "agent-browser"
       );
       return { success: true, data: exported };
     } catch (error) {
