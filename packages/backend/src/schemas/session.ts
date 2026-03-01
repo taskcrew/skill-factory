@@ -39,7 +39,6 @@ export const CreateSessionSchema = z
     name: z.string().min(1),
     config: z.record(z.string(), z.unknown()).optional().default({}),
     browser_session_id: z.string().optional(),
-    sandbox_id: z.string().optional(),
   })
   .openapi("CreateSession");
 
