@@ -67,17 +67,17 @@ export class BrowserUseService {
     const data = (await res.json()) as {
       id: string;
       status: string;
-      cdp_url?: string;
-      live_url?: string;
-      timeout_at?: string;
-      started_at?: string;
-      finished_at?: string;
+      cdpUrl?: string;
+      liveUrl?: string;
+      timeoutAt?: string;
+      startedAt?: string;
+      finishedAt?: string;
     };
 
     let cdpWsUrl: string | null = null;
-    if (data.cdp_url) {
+    if (data.cdpUrl) {
       try {
-        const cdpRes = await fetch(data.cdp_url);
+        const cdpRes = await fetch(data.cdpUrl);
         const cdpData = (await cdpRes.json()) as { webSocketDebuggerUrl?: string };
         cdpWsUrl = cdpData.webSocketDebuggerUrl ?? null;
       } catch (err) {
@@ -85,16 +85,16 @@ export class BrowserUseService {
       }
     }
 
-    const liveUrl = data.live_url ? `${data.live_url}?theme=light` : null;
+    const liveUrl = data.liveUrl ?? null;
 
     return {
       id: data.id,
       status: data.status,
       cdpWsUrl,
       liveUrl,
-      timeoutAt: data.timeout_at ?? null,
-      startedAt: data.started_at ?? null,
-      finishedAt: data.finished_at ?? null,
+      timeoutAt: data.timeoutAt ?? null,
+      startedAt: data.startedAt ?? null,
+      finishedAt: data.finishedAt ?? null,
     };
   }
 }
