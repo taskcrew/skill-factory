@@ -51,6 +51,19 @@ io.on("connection", (socket: Socket) => {
         return;
       }
 
+      // If the session has a skill, append an invisible instruction to the task
+      let augmentedTask = task;
+      if (session.skill_id) {
+        const skill = await db
+          .selectFrom("skills")
+          .select(["name"])
+          .where("id", "=", session.skill_id)
+          .executeTakeFirst();
+        if (skill) {
+          augmentedTask = `${task}\n\nUse the provided skill "${skill.name}"`;
+        }
+      }
+
       // Build system prompt with available tools
       const memory = [
         "You are a browser automation agent with `agent-browser` CLI pre-installed.",
@@ -81,7 +94,7 @@ io.on("connection", (socket: Socket) => {
           "Content-Type": "application/json",
           "x-daytona-preview-token": info.previewToken,
         },
-        body: JSON.stringify({ task, memory, ...executeOpts }),
+        body: JSON.stringify({ task: augmentedTask, memory, ...executeOpts }),
       });
 
       if (!upstream.ok) {
