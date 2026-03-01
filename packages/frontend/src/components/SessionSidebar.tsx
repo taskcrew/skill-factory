@@ -137,6 +137,7 @@ function convertBackendMessages(
           role: "assistant",
           text,
           toolCalls,
+          contentBlocks: [],
           timestamp: new Date(msg.created_at).getTime(),
           isStreaming: false,
         });

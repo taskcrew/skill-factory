@@ -8,7 +8,7 @@ export function MessageList() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [state.messages, state.messages[state.messages.length - 1]?.text, state.messages[state.messages.length - 1]?.contentBlocks.length]);
+  }, [state.messages, state.messages[state.messages.length - 1]?.text, state.messages[state.messages.length - 1]?.contentBlocks?.length]);
 
   if (state.messages.length === 0) {
     return (
