@@ -76,3 +76,9 @@ export const PaginatedSessionsSchema = z
     offset: z.number(),
   })
   .openapi("PaginatedSessions");
+
+export const BrowserPreviewSchema = z
+  .object({
+    liveUrl: z.string().url(),
+  })
+  .openapi("BrowserPreview");
