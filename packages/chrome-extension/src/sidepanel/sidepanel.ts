@@ -236,8 +236,13 @@ class PopupController {
       await this.stopVoice();
     }
     try {
-      await chrome.runtime.sendMessage({ type: MessageType.StopRecording });
-      await this.loadCurrentState();
+      await chrome.runtime.sendMessage({ type: MessageType.ClearRecording });
+      this.currentSession = null;
+      this.eventsList.textContent = "";
+      this.transcriptPanel.hidden = true;
+      this.transcriptContent.textContent = "";
+      this.transcriptContent.appendChild(this.transcriptPartial);
+      this.updateUI();
     } catch {
       // Ignore
     }
@@ -459,6 +464,7 @@ class PopupController {
   private updateUI(): void {
     if (!this.currentSession) {
       this.setIdleState();
+      this.eventCountEl.textContent = "0";
       return;
     }
 

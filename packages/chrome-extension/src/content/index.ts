@@ -83,12 +83,16 @@ class ContentScriptController {
   }
 }
 
-// Initialize on DOM ready
-if (document.readyState === "loading") {
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => new ContentScriptController()
-  );
-} else {
-  new ContentScriptController();
+// Guard against double-injection (e.g. when background injects via scripting API
+// into a tab that already has the manifest-declared content script)
+if (!(window as any).__skillFactoryCS) {
+  (window as any).__skillFactoryCS = true;
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => new ContentScriptController()
+    );
+  } else {
+    new ContentScriptController();
+  }
 }
