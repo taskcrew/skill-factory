@@ -45,7 +45,7 @@ export function useSocket(): SocketActions {
       dispatch({ type: "LIFECYCLE_EVENT", payload: evt })
     );
 
-    socket.on("error", (payload: { error: string }) =>
+    socket.on("execution_error", (payload: { error: string }) =>
       dispatch({ type: "SET_ERROR", error: payload.error })
     );
 

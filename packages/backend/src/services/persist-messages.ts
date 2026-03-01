@@ -13,7 +13,7 @@ export async function persistMessages(
       .insertInto("session_messages")
       .values({
         session_id: sessionId,
-        sdk_message_id: (m.id as string) ?? null,
+        sdk_message_id: (m.uuid as string) ?? null,
         type: (m.type as string) ?? "unknown",
         subtype: (m.subtype as string) ?? null,
         parent_tool_use_id: (m.parent_tool_use_id as string) ?? null,

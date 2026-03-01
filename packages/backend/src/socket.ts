@@ -36,18 +36,18 @@ io.on("connection", (socket: Socket) => {
         .executeTakeFirst();
 
       if (!session) {
-        socket.emit("error", { error: "Session not found" });
+        socket.emit("execution_error", { error: "Session not found" });
         return;
       }
 
       if (!session.sandbox_id) {
-        socket.emit("error", { error: "Session has no sandbox" });
+        socket.emit("execution_error", { error: "Session has no sandbox" });
         return;
       }
 
       const info = sandboxManager.getSandboxInfo(session.sandbox_id);
       if (!info) {
-        socket.emit("error", { error: "Sandbox not found in manager" });
+        socket.emit("execution_error", { error: "Sandbox not found in manager" });
         return;
       }
 
@@ -67,12 +67,12 @@ io.on("connection", (socket: Socket) => {
           { status: upstream.status, body: text.slice(0, 500) },
           "cc-server execute failed",
         );
-        socket.emit("error", { error: `cc-server returned ${upstream.status}` });
+        socket.emit("execution_error", { error: `cc-server returned ${upstream.status}` });
         return;
       }
 
       if (!upstream.body) {
-        socket.emit("error", { error: "No response body from cc-server" });
+        socket.emit("execution_error", { error: "No response body from cc-server" });
         return;
       }
 
@@ -102,26 +102,17 @@ io.on("connection", (socket: Socket) => {
                 const parsed = JSON.parse(data);
 
                 if (currentEvent === "message") {
-                  if (Array.isArray(parsed)) {
-                    for (const msg of parsed) {
-                      socket.emit("message", msg);
-                    }
-                    persistMessages(sessionId, parsed).catch((err) =>
-                      log.error({ err, sessionId }, "Failed to persist execute messages"),
-                    );
-                  } else {
-                    socket.emit("message", parsed);
-                    persistMessages(sessionId, [parsed]).catch((err) =>
-                      log.error({ err, sessionId }, "Failed to persist execute message"),
-                    );
-                  }
+                  socket.emit("message", parsed);
+                  persistMessages(sessionId, [parsed]).catch((err) =>
+                    log.error({ err, sessionId }, "Failed to persist execute message"),
+                  );
                 } else if (currentEvent === "lifecycle") {
                   socket.emit("lifecycle", parsed);
                   if (parsed.type === "session_completed" || parsed.type === "session_error") {
                     sawCompletion = true;
                   }
                 } else if (currentEvent === "error") {
-                  socket.emit("error", parsed);
+                  socket.emit("execution_error", parsed);
                 } else if (currentEvent) {
                   socket.emit(currentEvent, parsed);
                 }
@@ -146,7 +137,7 @@ io.on("connection", (socket: Socket) => {
       }
     } catch (err) {
       log.error({ err, sessionId }, "Execute handler error");
-      socket.emit("error", {
+      socket.emit("execution_error", {
         error: err instanceof Error ? err.message : "Internal server error",
       });
     }
