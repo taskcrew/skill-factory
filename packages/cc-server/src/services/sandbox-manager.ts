@@ -43,6 +43,7 @@ export class SandboxManager {
   private readonly daytona: Daytona;
   private readonly log = logger.child({ service: "sandbox-manager" });
   private readonly sandboxes = new Map<string, Sandbox>();
+  private readonly sandboxInfos = new Map<string, SandboxInfo>();
 
   constructor() {
     this.daytona = new Daytona({
@@ -102,16 +103,20 @@ export class SandboxManager {
 
     const preview = await sandbox.getPreviewLink(CC_SERVER_PORT);
 
+    const info: SandboxInfo = {
+      sandboxId: sandbox.id,
+      baseUrl: preview.url,
+      previewToken: preview.token,
+    };
+
+    this.sandboxInfos.set(sandbox.id, info);
+
     this.log.info(
       { sandboxId: sandbox.id, url: preview.url },
       "cc-server running in sandbox",
     );
 
-    return {
-      sandboxId: sandbox.id,
-      baseUrl: preview.url,
-      previewToken: preview.token,
-    };
+    return info;
   }
 
   async destroySandbox(sandboxId: string): Promise<void> {
@@ -124,6 +129,7 @@ export class SandboxManager {
     this.log.info({ sandboxId }, "Destroying sandbox");
     await this.daytona.delete(sandbox, 60);
     this.sandboxes.delete(sandboxId);
+    this.sandboxInfos.delete(sandboxId);
     this.log.info({ sandboxId }, "Sandbox destroyed");
   }
 
@@ -161,13 +167,21 @@ export class SandboxManager {
 
     const preview = await sandbox.getPreviewLink(CC_SERVER_PORT);
 
-    this.log.info({ sandboxId, url: preview.url }, "Sandbox restarted");
-
-    return {
+    const info: SandboxInfo = {
       sandboxId: sandbox.id,
       baseUrl: preview.url,
       previewToken: preview.token,
     };
+
+    this.sandboxInfos.set(sandbox.id, info);
+
+    this.log.info({ sandboxId, url: preview.url }, "Sandbox restarted");
+
+    return info;
+  }
+
+  getSandboxInfo(sandboxId: string): SandboxInfo | undefined {
+    return this.sandboxInfos.get(sandboxId);
   }
 
   private async waitForHealthy(sandbox: Sandbox, timeoutMs = 30_000): Promise<void> {

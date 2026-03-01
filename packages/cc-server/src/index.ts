@@ -1,6 +1,7 @@
 import { build } from "./app";
 import { config } from "./config";
 import { logger } from "./config/logger";
+import { SandboxManager } from "./services/sandbox-manager";
 
 process.on("unhandledRejection", (reason) => {
   logger.error({ reason }, "[UNHANDLED_REJECTION]");
@@ -11,7 +12,11 @@ process.on("uncaughtException", (error) => {
   process.exit(1);
 });
 
-const app = build();
+const sandboxManager = config.daytona.apiKey
+  ? new SandboxManager()
+  : undefined;
+
+const app = build(undefined, sandboxManager);
 
 Bun.serve({
   fetch: app.fetch,
@@ -24,6 +29,7 @@ logger.info(
   {
     host: config.server.host,
     port: config.server.port,
+    sandboxManagement: sandboxManager ? "enabled" : "disabled",
   },
   "cc-server listening",
 );
