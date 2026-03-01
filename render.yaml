@@ -9,4 +9,6 @@ services:
         value: production
       - key: PORT
         value: "10000"
+      - key: PUBLIC_BACKEND_URL
+        value: "https://skill-factory-backend.onrender.com"
     plan: free
