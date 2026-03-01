@@ -30,7 +30,7 @@ export function SkillSelector({ value, onChange, disabled }: SkillSelectorProps)
       <option value="">No skill</option>
       {skills.map((skill) => (
         <option key={skill.id} value={skill.id}>
-          {skill.filename}
+          {skill.name}
         </option>
       ))}
     </select>

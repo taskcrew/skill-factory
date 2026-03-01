@@ -297,10 +297,30 @@ class PopupController {
 
       const { content } = exportResponse.data;
 
+      // Prompt user for a skill name
+      const rawName = prompt("Name your skill:", "my-skill");
+      if (!rawName) {
+        return; // User cancelled
+      }
+
+      // Sanitize: lowercase, hyphens only, no leading/trailing/consecutive hyphens
+      const skillName = rawName
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 64);
+
+      if (!skillName) {
+        alert("Invalid skill name");
+        return;
+      }
+
       const res = await fetch(`${backendUrl}/api/skills`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: skillName,
           filename: "script.sh",
           content,
         }),
