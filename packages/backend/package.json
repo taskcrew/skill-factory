@@ -9,11 +9,13 @@
     "migrate": "bun src/migrate.ts"
   },
   "dependencies": {
+    "@daytonaio/sdk": "^0",
     "@hono/swagger-ui": "^0.5.3",
     "@hono/zod-openapi": "^1.2.2",
     "hono": "^4.12.3",
     "kysely": "^0.28.11",
     "pg": "^8.19.0",
+    "pino": "^9.9.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
