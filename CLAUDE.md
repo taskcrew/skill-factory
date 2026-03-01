@@ -1,111 +1,59 @@
----
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
-globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
-alwaysApply: false
----
+# CLAUDE.md
 
-Default to using Bun instead of Node.js.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+## Project Overview
 
-## APIs
+Skill Factory — a platform that records user browser activity via a Chrome extension, translates recordings into reusable "skills," and runs browser automation agents using the Claude Code Agent SDK in sandboxed environments. Hackathon MVP: optimize for wow factor over polish.
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+## Commands
 
-## Testing
-
-Use `bun test` to run tests.
-
-```ts#index.test.ts
-import { test, expect } from "bun:test";
-
-test("hello world", () => {
-  expect(1).toBe(1);
-});
+```bash
+bun install                        # Install all workspace dependencies
+bun run dev:backend                # Backend API server — http://localhost:3001
+bun run dev:frontend               # React frontend with HMR — http://localhost:3000
+bun run dev:cc-server              # Claude Code server — http://localhost:3002
+bun run build:chrome-extension     # Build extension → packages/chrome-extension/dist/
+bun run docker:cc-server           # Docker image for cc-server
+bun test                           # Run all tests
+bun test packages/backend          # Run tests for a single package
 ```
 
-## Frontend
+## Architecture
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+Bun workspaces monorepo (`packages/*`). All servers use `Bun.serve()` with route objects.
 
-Server:
+| Package | Port | Stack | Purpose |
+|---|---|---|---|
+| `backend` | 3001 | Hono, Kysely, pg, Socket.IO, Zod | REST API + real-time events. PostgreSQL for sessions/skills storage |
+| `frontend` | 3000 | React 19, Bun HTML imports | Chat UI with agent trajectory viewer and browser preview iframe |
+| `cc-server` | 3002 | @anthropic-ai/claude-code SDK, @daytonaio/sdk, Hono, Pino | Runs Claude Code Agent SDK sessions inside Daytona sandboxes |
+| `chrome-extension` | — | Manifest V3, bun build --target browser | Records user browser activity (keylogs) and uploads to backend |
 
-```ts#index.ts
-import index from "./index.html"
+### Data Flow
 
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
+1. **Chrome extension** captures user interactions → uploads recordings to **backend**
+2. **Backend** stores recordings, translates them into skills, exposes sessions API
+3. **Frontend** creates chat sessions, picks skills, shows real-time agent trajectory via Socket.IO
+4. **Backend** delegates agent execution to **cc-server**, which runs Claude Code SDK in Daytona sandboxes
+5. **cc-server** streams agent progress back through backend to frontend
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
+### Key Conventions
 
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
+- **Bun-first**: Use `bun` for everything — no Node.js, npm, Vite, Express, or dotenv. Bun auto-loads `.env`.
+- **Bun.serve()** for all HTTP servers with route objects. No Express/Hono standalone server — Hono is used as middleware within `Bun.serve()`.
+- **Frontend**: Bun HTML imports (`import index from "./index.html"`), React 19, HMR via `development: { hmr: true }`. No Vite/webpack.
+- **TypeScript**: Strict mode, composite project references, bundler module resolution, no emit.
+- **Backend DB**: PostgreSQL via `kysely` query builder + `pg` driver. Migrations in `src/migrations/`.
+- **Validation**: Zod schemas for request/response validation.
+- **Chrome Extension**: Built with `bun build --target browser --splitting`. Output in `dist/`.
+- **Real-time**: Socket.IO with `@socket.io/bun-engine` adapter for WebSocket transport.
 
-With the following `frontend.tsx`:
+### Bun API Preferences
 
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+- `Bun.serve()` for HTTP/WebSocket servers (not Express)
+- `Bun.file()` over `node:fs` readFile/writeFile
+- `Bun.$\`cmd\`` over execa
+- `bun:test` for testing (`import { test, expect } from "bun:test"`)
+- Bun auto-loads `.env` — don't import dotenv
+- Read Bun API docs at `node_modules/bun-types/docs/**.mdx`
