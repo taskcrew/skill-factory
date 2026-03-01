@@ -253,7 +253,8 @@ export function useSocket(): SocketActions {
 
     (async () => {
       const { io } = await import("socket.io-client");
-      socket = io(import.meta.env?.BACKEND_URL ?? "http://localhost:3001", {
+      const { BACKEND_URL } = await import("../config");
+      socket = io(BACKEND_URL, {
         query: { sessionId: sessionIdRef.current },
       });
 

@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import type { PaginatedSessions } from "../types/chat";
-
-const API_BASE = process.env.BACKEND_URL ?? "http://localhost:3001";
+import { BACKEND_URL } from "../config";
 
 async function fetchSessions(): Promise<PaginatedSessions> {
-  const res = await fetch(`${API_BASE}/api/sessions?limit=50`);
+  const res = await fetch(`${BACKEND_URL}/api/sessions?limit=50`);
   if (!res.ok) {
     throw new Error(`Failed to fetch sessions: ${res.status}`);
   }
