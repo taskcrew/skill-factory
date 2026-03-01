@@ -580,7 +580,7 @@ class PopupController {
 
     const iconWrap = document.createElement("span");
     iconWrap.className = "voice-icon";
-    iconWrap.textContent = "\u{1F399}";
+    iconWrap.appendChild(this.createWaveSvg());
     item.appendChild(iconWrap);
 
     const textEl = document.createElement("span");
@@ -711,6 +711,23 @@ class PopupController {
     } catch {
       return event.type;
     }
+  }
+
+  private createWaveSvg(): SVGSVGElement {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    for (const d of ["M2 10v3", "M6 6v11", "M10 3v18", "M14 8v7", "M18 5v13", "M22 10v3"]) {
+      const path = document.createElementNS(ns, "path");
+      path.setAttribute("d", d);
+      svg.appendChild(path);
+    }
+    return svg;
   }
 
   private downloadFile(result: {
