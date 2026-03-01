@@ -21,11 +21,21 @@ export type ChatAction =
   | { type: "ADD_USER_MESSAGE"; text: string }
   | { type: "SDK_MESSAGE"; payload: SDKMessage }
   | { type: "LIFECYCLE_EVENT"; payload: LifecycleEvent }
-  | { type: "SET_ERROR"; error: string };
+  | { type: "SET_ERROR"; error: string }
+  | { type: "SET_SESSION_ID"; sessionId: string }
+  | { type: "LOAD_SESSION"; sessionId: string; messages: ChatMessage[] }
+  | { type: "CLEAR_SESSION" };
 
 // Reducer
 
 let msgCounter = 0;
+
+const emptyState: ChatSession = {
+  sessionId: null,
+  messages: [],
+  isConnected: false,
+  isAgentRunning: false,
+};
 
 function chatReducer(state: ChatSession, action: ChatAction): ChatSession {
   switch (action.type) {
@@ -85,6 +95,23 @@ function chatReducer(state: ChatSession, action: ChatAction): ChatSession {
     case "SET_ERROR":
       return { ...state, error: action.error };
 
+    case "SET_SESSION_ID":
+      return { ...state, sessionId: action.sessionId };
+
+    case "LOAD_SESSION":
+      return {
+        ...emptyState,
+        isConnected: state.isConnected,
+        sessionId: action.sessionId,
+        messages: action.messages,
+      };
+
+    case "CLEAR_SESSION":
+      return {
+        ...emptyState,
+        isConnected: state.isConnected,
+      };
+
     default:
       return state;
   }
@@ -99,21 +126,8 @@ interface ChatContextValue {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
-export function ChatProvider({
-  sessionId,
-  children,
-}: {
-  sessionId: string;
-  children: ReactNode;
-}) {
-  const initialState: ChatSession = {
-    sessionId,
-    messages: [],
-    isConnected: false,
-    isAgentRunning: false,
-  };
-
-  const [state, dispatch] = useReducer(chatReducer, initialState);
+export function ChatProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(chatReducer, emptyState);
 
   return (
     <ChatContext.Provider value={{ state, dispatch }}>

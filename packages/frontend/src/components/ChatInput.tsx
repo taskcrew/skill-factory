@@ -5,7 +5,7 @@ import { useSocket } from "../hooks/useSocket.ts";
 export function ChatInput() {
   const [text, setText] = useState("");
   const { state } = useChatContext();
-  const { sendMessage } = useSocket(state.sessionId);
+  const { sendMessage } = useSocket();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

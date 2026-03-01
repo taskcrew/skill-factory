@@ -1,6 +1,7 @@
 import path from "node:path";
 import { swaggerUI } from "@hono/swagger-ui";
 import { FileMigrationProvider, Migrator } from "kysely";
+import { cors } from "hono/cors";
 import { db } from "./db";
 import { buildBaseApp } from "./app";
 import { agentRouter } from "./routes/agent";
@@ -37,6 +38,8 @@ if (error) {
 console.log("Migrations up to date");
 
 const app = buildBaseApp();
+
+app.use("/*", cors());
 
 app.route("/api/sessions", sessionsRouter);
 app.route("/api/sessions", agentRouter);

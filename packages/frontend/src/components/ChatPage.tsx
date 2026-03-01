@@ -17,9 +17,8 @@ function ChatInner() {
 }
 
 export function ChatPage() {
-  const sessionId = `session-${Date.now()}`;
   return (
-    <ChatProvider sessionId={sessionId}>
+    <ChatProvider>
       <ChatInner />
     </ChatProvider>
   );

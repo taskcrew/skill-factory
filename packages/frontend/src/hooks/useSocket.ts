@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useChatContext, type ChatAction } from "../context/ChatContext.tsx";
+import { useSessionApi } from "./useSessionApi.ts";
 import type { SDKMessage, LifecycleEvent } from "../types/chat.ts";
 
 const USE_MOCK = true; // flip to false when backend Socket.IO is ready
@@ -227,9 +228,16 @@ export interface SocketActions {
   sendMessage: (text: string) => void;
 }
 
-export function useSocket(sessionId: string): SocketActions {
-  const { dispatch } = useChatContext();
+export function useSocket(): SocketActions {
+  const { state, dispatch } = useChatContext();
+  const { createSession, postMessage } = useSessionApi();
   const cleanupRef = useRef<(() => void) | null>(null);
+  const sessionIdRef = useRef<string | null>(state.sessionId);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    sessionIdRef.current = state.sessionId;
+  }, [state.sessionId]);
 
   useEffect(() => {
     if (USE_MOCK) {
@@ -246,7 +254,7 @@ export function useSocket(sessionId: string): SocketActions {
     (async () => {
       const { io } = await import("socket.io-client");
       socket = io(import.meta.env?.BACKEND_URL ?? "http://localhost:3001", {
-        query: { sessionId },
+        query: { sessionId: sessionIdRef.current },
       });
 
       socket.on("connect", () => dispatch({ type: "CONNECT" }));
@@ -262,20 +270,43 @@ export function useSocket(sessionId: string): SocketActions {
     return () => {
       socket?.disconnect();
     };
-  }, [sessionId, dispatch]);
+  }, [dispatch]);
 
   const sendMessage = useCallback(
     (text: string) => {
+      // Optimistic: show user message immediately
       dispatch({ type: "ADD_USER_MESSAGE", text });
 
-      if (USE_MOCK) {
-        // Clean up any previous mock sequence
-        cleanupRef.current?.();
-        cleanupRef.current = fireMockSequence(dispatch, sessionId);
-      }
-      // In real mode: socket.emit("user_message", text)
+      // Fire API call + mock sequence asynchronously
+      (async () => {
+        try {
+          let currentSessionId = sessionIdRef.current;
+
+          if (!currentSessionId) {
+            // First message — create session with initial message
+            const sessionName = text.slice(0, 50);
+            const session = await createSession(sessionName, text);
+            currentSessionId = session.id;
+            dispatch({ type: "SET_SESSION_ID", sessionId: session.id });
+          } else {
+            // Subsequent message — post to existing session
+            await postMessage(currentSessionId, text);
+          }
+
+          if (USE_MOCK) {
+            cleanupRef.current?.();
+            cleanupRef.current = fireMockSequence(dispatch, currentSessionId);
+          }
+        } catch (err) {
+          dispatch({
+            type: "SET_ERROR",
+            error:
+              err instanceof Error ? err.message : "Failed to send message",
+          });
+        }
+      })();
     },
-    [dispatch, sessionId]
+    [dispatch, createSession, postMessage]
   );
 
   return { sendMessage };

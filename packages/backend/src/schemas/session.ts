@@ -39,8 +39,15 @@ export const CreateSessionSchema = z
     name: z.string().min(1),
     config: z.record(z.string(), z.unknown()).optional().default({}),
     browser_session_id: z.string().optional(),
+    initial_message: z.string().min(1).optional(),
   })
   .openapi("CreateSession");
+
+export const CreateMessageSchema = z
+  .object({
+    content: z.string().min(1),
+  })
+  .openapi("CreateMessage");
 
 export const UpdateSessionSchema = z
   .object({
