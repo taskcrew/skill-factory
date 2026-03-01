@@ -45,7 +45,6 @@ skillsRouter.openapi(createSkill, async (c) => {
       name: body.name,
       filename: body.filename,
       content: body.content,
-      description: body.description ?? null,
     })
     .returningAll()
     .executeTakeFirstOrThrow();

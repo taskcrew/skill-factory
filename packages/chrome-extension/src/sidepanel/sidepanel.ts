@@ -303,7 +303,7 @@ class PopupController {
         return; // User cancelled
       }
 
-      // Sanitize to agentskills.io spec: lowercase, hyphens only, no leading/trailing/consecutive hyphens
+      // Sanitize: lowercase, hyphens only, no leading/trailing/consecutive hyphens
       const skillName = rawName
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, "-")
@@ -316,9 +316,6 @@ class PopupController {
         return;
       }
 
-      const startUrl = this.currentSession.metadata.startUrl || "unknown page";
-      const eventCount = this.currentSession.events.length;
-
       const res = await fetch(`${backendUrl}/api/skills`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -326,7 +323,6 @@ class PopupController {
           name: skillName,
           filename: "script.sh",
           content,
-          description: `Recorded ${eventCount} browser actions from ${startUrl}. Replay with agent-browser CLI.`,
         }),
       });
 

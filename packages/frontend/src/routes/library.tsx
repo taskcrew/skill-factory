@@ -55,11 +55,6 @@ function SkillCard({
     >
       <div className="card-body p-5 gap-3">
         <h3 className="card-title text-base">{skill.name}</h3>
-        {skill.description && (
-          <p className="text-sm text-base-content/60 line-clamp-2">
-            {skill.description}
-          </p>
-        )}
         <div className="flex items-center justify-between mt-auto pt-1">
           <span className="badge badge-sm badge-ghost font-mono">
             {skill.filename}
@@ -122,11 +117,6 @@ function SkillDetailModal({
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="min-w-0">
             <h3 className="font-bold text-lg">{skill.name}</h3>
-            {skill.description && (
-              <p className="text-sm text-base-content/60 mt-1">
-                {skill.description}
-              </p>
-            )}
           </div>
           <form method="dialog">
             <button className="btn btn-sm btn-circle btn-ghost">✕</button>
