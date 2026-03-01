@@ -10,6 +10,7 @@ export enum MessageType {
   // Control messages (popup -> background)
   StartRecording = "START_RECORDING",
   StopRecording = "STOP_RECORDING",
+  ClearRecording = "CLEAR_RECORDING",
   PauseRecording = "PAUSE_RECORDING",
   ResumeRecording = "RESUME_RECORDING",
 

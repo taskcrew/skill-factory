@@ -9,10 +9,19 @@
   <body>
     <div id="app">
       <header>
-        <h1>Skill Factory Recorder</h1>
+        <h1>Skill Factory</h1>
       </header>
 
       <main>
+        <section id="status">
+          <div class="status-indicator" data-status="idle">
+            <span class="dot"></span>
+            <span class="label">Ready</span>
+          </div>
+          <div class="event-count">Events: <span id="eventCount">0</span></div>
+        </section>
+
+        <!-- Hidden original controls (logic still wired) -->
         <section id="controls">
           <button id="recordBtn" class="btn-primary">
             <span class="icon">&#9899;</span>
@@ -38,53 +47,57 @@
           </div>
         </section>
 
-        <section id="status">
-          <div class="status-indicator" data-status="idle">
-            <span class="dot"></span>
-            <span class="label">Ready</span>
-          </div>
-          <div class="event-count">Events: <span id="eventCount">0</span></div>
+        <section id="events" class="event-list">
+          <!-- Timeline items rendered by JS -->
         </section>
 
-        <section id="events" class="event-list">
-          <!-- Event items will be inserted here -->
+        <section id="transcript" class="transcript-panel collapsed" hidden>
+          <button id="transcriptToggle" class="transcript-toggle">
+            <h2>Transcript</h2>
+            <span class="chevron">&#9660;</span>
+          </button>
+          <div id="transcriptContent" class="transcript-content">
+            <div id="transcriptPartial" class="transcript-partial"></div>
+          </div>
         </section>
 
         <section id="export">
           <h2>Export</h2>
           <div class="export-buttons">
-            <button class="btn-export" data-format="agent-browser">Agent Browser Script</button>
+            <button class="btn-export" data-format="agent-browser">Agent Browser</button>
+            <button class="btn-export" data-format="raw-events">Raw JSON</button>
           </div>
         </section>
 
         <section id="upload">
-          <h2>Upload to Backend</h2>
+          <h2>Settings</h2>
           <div class="upload-form">
-            <input
-              type="url"
-              id="apiEndpoint"
-              placeholder="https://api.example.com/recordings"
-            />
-            <input
-              type="password"
-              id="apiKey"
-              placeholder="API Key (optional)"
-            />
-            <input
-              type="password"
-              id="elevenLabsKey"
-              placeholder="ElevenLabs API Key (for voice)"
-            />
-            <button id="uploadBtn" class="btn-secondary">Upload</button>
-          </div>
-        </section>
-        <section id="transcript" class="transcript-panel" hidden>
-          <h2>Transcript</h2>
-          <div id="transcriptContent" class="transcript-content">
-            <div id="transcriptPartial" class="transcript-partial"></div>
+            <input type="url" id="apiEndpoint" placeholder="API Endpoint" />
+            <input type="password" id="apiKey" placeholder="API Key" />
+            <input type="password" id="elevenLabsKey" placeholder="ElevenLabs Key" />
+            <button id="uploadBtn">Upload</button>
           </div>
         </section>
       </main>
+
+      <!-- Floating bottom bar -->
+      <div class="bottom-bar">
+        <div class="bar-buttons">
+          <button id="barDeleteBtn" class="bar-btn" title="Clear recording">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+          <button id="barRecordBtn" class="bar-btn bar-btn-primary" title="Start recording">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+          </button>
+          <button id="barPauseBtn" class="bar-btn" title="Pause" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <button id="barVoiceBtn" class="bar-btn bar-btn-voice" title="Voice" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          </button>
+        </div>
+        <button id="barDoneBtn" class="bar-done">Done</button>
+      </div>
     </div>
 
     <script type="module" src="./sidepanel.ts"></script>

@@ -70,6 +70,9 @@ class BackgroundController {
       case MessageType.StopRecording:
         return this.handleStopRecording();
 
+      case MessageType.ClearRecording:
+        return this.handleClearRecording();
+
       case MessageType.PauseRecording:
         return this.handlePauseRecording();
 
@@ -99,6 +102,10 @@ class BackgroundController {
   private async handleStartRecording(
     settingsOverride?: Partial<RecordingSettings>
   ): Promise<MessageResponse> {
+    // Inject content scripts into tabs that may not have them (e.g. tabs
+    // open before the extension was installed/reloaded)
+    await this.ensureContentScripts();
+
     const session = await this.stateManager.startRecording(settingsOverride);
     await this.tabCoordinator.notifyAllTabs(true, session.settings);
     return { success: true, data: session };
@@ -108,6 +115,31 @@ class BackgroundController {
     const session = await this.stateManager.stopRecording();
     await this.tabCoordinator.notifyAllTabs(false, session.settings);
     return { success: true, data: session };
+  }
+
+  private async handleClearRecording(): Promise<MessageResponse> {
+    await this.tabCoordinator.notifyAllTabs(false, this.stateManager.getSettings());
+    await this.stateManager.clearSession();
+    return { success: true };
+  }
+
+  private async ensureContentScripts(): Promise<void> {
+    try {
+      const tabs = await chrome.tabs.query({});
+      const eligible = tabs.filter(
+        (t) => t.id && t.url && !t.url.startsWith("chrome://") && !t.url.startsWith("chrome-extension://")
+      );
+      await Promise.allSettled(
+        eligible.map((tab) =>
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id!, allFrames: true },
+            files: ["src/content/index.js"],
+          })
+        )
+      );
+    } catch (error) {
+      console.warn("Failed to inject content scripts:", error);
+    }
   }
 
   private async handlePauseRecording(): Promise<MessageResponse> {
@@ -174,7 +206,7 @@ class BackgroundController {
       }
       const exported = await exportRecording(
         session,
-        format as "agent-browser"
+        format as "agent-browser" | "raw-events"
       );
       return { success: true, data: exported };
     } catch (error) {
