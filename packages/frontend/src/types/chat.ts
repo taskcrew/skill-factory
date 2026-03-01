@@ -95,6 +95,25 @@ export type LifecycleEvent = {
   error?: string;
 };
 
+// API types
+
+export type SessionStatus = "created" | "active" | "completed" | "error";
+
+export interface Session {
+  id: string;
+  name: string;
+  status: SessionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginatedSessions {
+  data: Session[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 // Chat UI types
 
 export type ToolCallStatus = "running" | "completed" | "error";
