@@ -72,7 +72,7 @@ export class SandboxManager {
     const sessionId = `cc-server-${sandbox.id}`;
     await sandbox.process.createSession(sessionId);
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "cd /app && bun src/index.ts",
+      command: "cd /app && npx tsx src/index.ts",
       runAsync: true,
     });
 
@@ -114,7 +114,7 @@ export class SandboxManager {
     return this.sandboxInfos.get(sandboxId);
   }
 
-  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 30_000): Promise<void> {
+  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 60_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const interval = 1_000;
 

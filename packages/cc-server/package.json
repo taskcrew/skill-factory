@@ -3,15 +3,19 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot src/index.ts",
-    "start": "bun src/index.ts",
-    "test": "bun test"
+    "dev": "npx tsx --watch src/index.ts",
+    "start": "npx tsx src/index.ts",
+    "test": "npx tsx --test"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.73",
     "@daytonaio/sdk": "^0",
+    "@hono/node-server": "^1.14.1",
     "hono": "^4.9.7",
     "pino": "^9.9.5",
     "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4"
   }
 }

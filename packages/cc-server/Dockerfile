@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
   git bash curl python3 python3-venv wget jq \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Claude Code CLI + agent-browser globally
+# Install Claude Code CLI + agent-browser globally (need node for agent-browser daemon)
 RUN npm install -g @anthropic-ai/claude-code agent-browser tsx
 
 # Create workspace directory for Claude Code to operate in

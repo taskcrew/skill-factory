@@ -1,3 +1,4 @@
+import { serve } from "@hono/node-server";
 import { build } from "./app";
 import { config } from "./config";
 import { logger } from "./config/logger";
@@ -19,18 +20,20 @@ const sandboxManager = config.daytona.apiKey
 
 const app = build(new StreamingClaudeExecutor(), sandboxManager);
 
-Bun.serve({
-  fetch: app.fetch,
-  port: config.server.port,
-  hostname: config.server.host,
-  idleTimeout: 255,
-});
-
-logger.info(
+serve(
   {
-    host: config.server.host,
+    fetch: app.fetch,
     port: config.server.port,
-    sandboxManagement: sandboxManager ? "enabled" : "disabled",
+    hostname: config.server.host,
   },
-  "cc-server listening",
+  () => {
+    logger.info(
+      {
+        host: config.server.host,
+        port: config.server.port,
+        sandboxManagement: sandboxManager ? "enabled" : "disabled",
+      },
+      "cc-server listening",
+    );
+  },
 );

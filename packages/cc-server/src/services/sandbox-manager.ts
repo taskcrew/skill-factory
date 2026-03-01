@@ -206,7 +206,7 @@ export class SandboxManager {
         // Server not ready yet
       }
 
-      await Bun.sleep(interval);
+      await new Promise((r) => setTimeout(r, interval));
     }
 
     throw new Error(`cc-server health check timed out after ${timeoutMs}ms`);
