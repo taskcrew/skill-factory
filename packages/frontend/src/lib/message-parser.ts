@@ -2,6 +2,7 @@ import type {
   ChatSession,
   ChatMessage,
   ToolCall,
+  ContentItem,
   SDKMessage,
   SDKAssistantMessage,
   SDKUserMessage,
@@ -32,6 +33,7 @@ function getOrCreateAssistantMessage(session: ChatSession): {
     role: "assistant",
     text: "",
     toolCalls: [],
+    contentBlocks: [],
     timestamp: Date.now(),
     isStreaming: true,
   };
@@ -45,19 +47,26 @@ function handleAssistantMessage(
 ): ChatSession {
   const { session: s, message, index } = getOrCreateAssistantMessage(session);
   const messages = [...s.messages];
-  const updated = { ...message, toolCalls: [...message.toolCalls] };
+  const updated = {
+    ...message,
+    toolCalls: [...message.toolCalls],
+    contentBlocks: [...message.contentBlocks],
+  };
 
   for (const block of sdk.message.content) {
     if (block.type === "text") {
       updated.text += (updated.text ? "\n\n" : "") + block.text;
+      updated.contentBlocks.push({ type: "text", text: block.text });
     } else if (block.type === "tool_use") {
-      updated.toolCalls.push({
+      const toolCall: ToolCall = {
         id: block.id,
         name: block.name,
         input: block.input,
         status: "running",
         isError: false,
-      });
+      };
+      updated.toolCalls.push(toolCall);
+      updated.contentBlocks.push({ type: "tool_call", toolCall });
     }
   }
 
@@ -95,7 +104,12 @@ function handleUserMessage(
 
       const updatedToolCalls = [...msg.toolCalls];
       updatedToolCalls[toolIdx] = updatedTool;
-      messages[i] = { ...msg, toolCalls: updatedToolCalls };
+      const updatedContentBlocks = msg.contentBlocks.map((cb): ContentItem =>
+        cb.type === "tool_call" && cb.toolCall.id === block.tool_use_id
+          ? { type: "tool_call", toolCall: updatedTool }
+          : cb
+      );
+      messages[i] = { ...msg, toolCalls: updatedToolCalls, contentBlocks: updatedContentBlocks };
       break;
     }
   }
@@ -134,7 +148,21 @@ function handleStreamEvent(
   if (event.type === "content_block_delta" && event.delta?.type === "text_delta" && event.delta.text) {
     const { session: s, message, index } = getOrCreateAssistantMessage(session);
     const messages = [...s.messages];
-    messages[index] = { ...message, text: message.text + event.delta.text };
+    const contentBlocks = [...message.contentBlocks];
+    const lastBlock = contentBlocks[contentBlocks.length - 1];
+    if (lastBlock && lastBlock.type === "text") {
+      contentBlocks[contentBlocks.length - 1] = {
+        type: "text",
+        text: lastBlock.text + event.delta.text,
+      };
+    } else {
+      contentBlocks.push({ type: "text", text: event.delta.text });
+    }
+    messages[index] = {
+      ...message,
+      text: message.text + event.delta.text,
+      contentBlocks,
+    };
     return { ...s, messages };
   }
 

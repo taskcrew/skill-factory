@@ -51,6 +51,7 @@ function convertBackendMessages(
           role: "user",
           text,
           toolCalls: [],
+          contentBlocks: [],
           timestamp: new Date(msg.created_at).getTime(),
           isStreaming: false,
         });

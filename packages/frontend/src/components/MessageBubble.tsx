@@ -38,11 +38,18 @@ export function MessageBubble({ message }: Props) {
             : "bg-base-300 text-base-content"
         }`}
       >
-        {message.text && <MarkdownRenderer content={message.text} />}
-        {message.toolCalls.map((tc) => (
-          <ToolCallCard key={tc.id} toolCall={tc} />
-        ))}
-        {message.isStreaming && !message.text && message.toolCalls.length === 0 && (
+        {isUser ? (
+          message.text && <MarkdownRenderer content={message.text} />
+        ) : (
+          message.contentBlocks.map((block, i) =>
+            block.type === "text" ? (
+              <MarkdownRenderer key={i} content={block.text} />
+            ) : (
+              <ToolCallCard key={block.toolCall.id} toolCall={block.toolCall} />
+            )
+          )
+        )}
+        {message.isStreaming && !message.text && message.contentBlocks.length === 0 && (
           <span className="loading loading-dots loading-sm" />
         )}
       </div>
