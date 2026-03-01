@@ -12,7 +12,7 @@ export function SkillSelector({ value, onChange, disabled }: SkillSelectorProps)
 
   if (isLoading) {
     return (
-      <select className="select select-bordered select-sm w-48 opacity-50" disabled>
+      <select className="select select-bordered flex-1 bg-base-100 px-4 opacity-50" disabled>
         <option>Loading skills...</option>
       </select>
     );
@@ -22,7 +22,7 @@ export function SkillSelector({ value, onChange, disabled }: SkillSelectorProps)
 
   return (
     <select
-      className="select select-bordered select-sm w-48"
+      className="select select-bordered flex-1 bg-base-100 px-4"
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value || null)}
       disabled={disabled}
