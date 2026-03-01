@@ -54,14 +54,7 @@ io.on("connection", (socket: Socket) => {
       // If the session has a skill, append an invisible instruction to the task
       let augmentedTask = task;
       if (session.skill_id) {
-        const skill = await db
-          .selectFrom("skills")
-          .select(["name"])
-          .where("id", "=", session.skill_id)
-          .executeTakeFirst();
-        if (skill) {
-          augmentedTask = `${task}\n\nUse the provided skill "${skill.name}"`;
-        }
+        augmentedTask = `${task}\n\nUse the provided skill "browser-recording-replay"`;
       }
 
       // Build system prompt with available tools

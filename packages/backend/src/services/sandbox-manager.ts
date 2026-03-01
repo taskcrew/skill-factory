@@ -18,24 +18,46 @@ export type SandboxInfo = {
 const CC_SERVER_PORT = 3002;
 
 const SKILL_MD_CONTENT = `\
-# Skill Format Specification
-
-A **skill** is a reusable browser automation script. It's a bash file containing \`agent-browser\` commands that replay a recorded user workflow.
-
-\`\`\`
-User browses → Chrome extension captures events → System generates workflow.sh → Agent replays it
-\`\`\`
-
+---
+name: browser-recording-replay
+description: Replay recorded browser workflows using agent-browser CLI scripts. Use when the user provides a .sh recording script or asks to execute a recorded browser automation workflow.
+allowed-tools: Bash(agent-browser:*) Bash(bash:*)
 ---
 
-## File Format
+# Browser Recording Replay
 
-A skill is a single \`.sh\` file with a header comment block and sequential \`agent-browser\` steps:
+Replay recorded browser workflows captured by the Chrome extension. Recordings are \`.sh\` scripts containing sequential \`agent-browser\` commands.
+
+## Trigger
+
+Use this skill when:
+
+- The user provides a \`.sh\` recording script
+- The user asks to replay or execute a recorded browser workflow
+- A session has a skill with a \`workflow.sh\` asset attached
+
+## Execution
+
+1. Connect to the remote browser:
+   \`\`\`bash
+   agent-browser connect "$AGENT_BROWSER_CDP"
+   \`\`\`
+2. Run the workflow script:
+   \`\`\`bash
+   bash /path/to/workflow.sh
+   \`\`\`
+3. Verify the final page state matches the expected outcome.
+
+If running steps individually (for debugging or adaptation), execute each \`agent-browser\` command from the script one at a time.
+
+## Script Format
+
+Recording scripts follow this structure:
 
 \`\`\`bash
 #!/bin/bash
 # Skill: <name>
-# Recorded: <date>
+# Recorded: <YYYY-MM-DD>
 # Source URL: <starting-url>
 
 # Step 1: Navigate to starting page
@@ -59,111 +81,55 @@ agent-browser find role link click --name "Streaming"
 agent-browser scroll down 500
 \`\`\`
 
-### Header
+Each step has a comment describing the action, followed by one or more \`agent-browser\` commands.
 
-\`\`\`bash
-#!/bin/bash
-# Skill: <human-readable name>
-# Recorded: <YYYY-MM-DD>
-# Source URL: <the URL where recording started>
-\`\`\`
+## Command Reference
 
-### Steps
+See [references/agent-browser-commands.md](references/agent-browser-commands.md) for the full command list.
 
-Each step is a comment describing the action followed by one or more \`agent-browser\` commands:
+Core commands used in recordings:
 
-\`\`\`bash
-# Step N: <description of what this step does>
-agent-browser <command> [args...]
-\`\`\`
+| Command                                | Description                     |
+| -------------------------------------- | ------------------------------- |
+| \`open <url>\`                           | Navigate to URL                 |
+| \`snapshot\`                             | Accessibility tree with @refs   |
+| \`snapshot -i\`                          | Interactive elements only       |
+| \`click <@ref>\`                         | Click element                   |
+| \`fill <@ref> <text>\`                   | Clear and fill field            |
+| \`type <@ref> <text>\`                   | Append text                     |
+| \`press <key>\`                          | Press key (Enter, Tab, etc.)    |
+| \`hover <@ref>\`                         | Hover over element              |
+| \`scroll <dir> [px]\`                    | Scroll up/down/left/right       |
+| \`wait --load networkidle\`              | Wait for page load              |
+| \`find css <sel> <action>\`              | Find by CSS selector, then act  |
+| \`find text <sel> <action>\`             | Find by text selector, then act |
+| \`find role <role> <action> --name <n>\` | Find by ARIA role + name        |
+| \`connect <url>\`                        | Connect to browser via CDP      |
 
----
+## Element Targeting
 
-## agent-browser Commands
+Recording scripts use three \`find\` strategies:
 
-| Command | Description |
-|---|---|
-| \`open <url>\` | Navigate to URL |
-| \`snapshot\` | Print accessibility tree with @refs |
-| \`snapshot -i\` | Interactive elements only |
-| \`screenshot [path]\` | Take screenshot |
-| \`click <@ref>\` | Click element by ref |
-| \`dblclick <@ref>\` | Double-click element |
-| \`fill <@ref> <text>\` | Clear field and type text |
-| \`type <@ref> <text>\` | Append text (no clear) |
-| \`press <key>\` | Press key (Enter, Tab, Escape, etc.) |
-| \`hover <@ref>\` | Hover over element |
-| \`scroll <dir> [px]\` | Scroll up/down/left/right |
-| \`wait <sel\\|ms>\` | Wait for element or milliseconds |
-| \`wait --load networkidle\` | Wait for page load |
-| \`find css <selector> <action>\` | Find element by CSS, then act |
-| \`find text <text> <action>\` | Find element by text, then act |
-| \`find role <role> <action> --name <name>\` | Find by ARIA role and name |
-| \`eval <js>\` | Run JavaScript |
-| \`connect <url>\` | Connect to browser via CDP |
+- **\`find css "<selector>" <action>\`** \u2014 CSS selector from the recording
+- **\`find text "<selector>" <action>\`** \u2014 Playwright-style text selector (e.g. \`span:has-text("Login")\`)
+- **\`find role <role> <action> --name "<name>"\`** \u2014 ARIA role + accessible name
 
-### Element Targeting
+If a selector from the recording breaks at replay time, take a snapshot (\`agent-browser snapshot\`), find the target element by its @ref, and use that instead.
 
-Scripts from recordings use CSS selectors via \`find css\`. At replay time:
+## Error Recovery
 
-- **\`find css "<selector>" <action>\`** — uses the CSS selector captured during recording
-- **\`find text "<selector>" <action>\`** — matches by Playwright-style text selector (e.g. \`span:has-text("Login")\`)
-- **\`find role <role> <action> --name "<name>"\`** — matches ARIA role + accessible name
-- **\`@ref\`** — element references from \`agent-browser snapshot\` output (live, not from recording)
+- **Element not found** \u2014 run \`agent-browser snapshot\`, locate the element by the step description, use its @ref
+- **Page not loaded** \u2014 add \`agent-browser wait --load networkidle\` before the failing step
+- **Wrong page state** \u2014 a previous step may have caused unexpected navigation; use \`agent-browser snapshot\` to re-orient
+- **Form validation** \u2014 input values from the recording may need adjustment for the target environment
 
----
+## Tips
 
-## How Recordings Become Skills
-
-The Chrome extension captures DOM events. Each event type maps to an \`agent-browser\` command:
-
-| Browser Event | Generated Command |
-|---|---|
-| Page navigation | \`agent-browser open "<url>"\` |
-| Click on element | \`agent-browser find css "<selector>" click\` |
-| Click on text | \`agent-browser find text "<selector>" click\` |
-| Click on role | \`agent-browser find role <role> click --name "<name>"\` |
-| Text input | \`agent-browser find css "<selector>" fill "<value>"\` |
-| Scroll | \`agent-browser scroll down <px>\` |
-| Key press | \`agent-browser press <key>\` |
-| Hover | \`agent-browser find css "<selector>" hover\` |
-| Form submit | \`agent-browser press Enter\` |
-
-### Selector Generation
-
-The extension generates selectors in priority order:
-
-1. \`data-testid\` attribute → most stable across deploys
-2. \`#id\` → stable if the ID is unique and not auto-generated
-3. ARIA selector (\`[role="button"][name="Submit"]\`) → accessible and semantic
-4. CSS path (\`div > ul > li:nth-of-type(3) > a\`) → fallback, most brittle
-
----
-
-## Execution
-
-Before running a skill script, the agent must connect to a remote browser:
-
-\`\`\`bash
-agent-browser connect "$AGENT_BROWSER_CDP"
-bash /path/to/skill.sh
-\`\`\`
-
-### Error Recovery
-
-When a step fails during replay:
-
-1. **Element not found** — run \`agent-browser snapshot\`, find the element by description, use its @ref
-2. **Page not loaded** — add \`agent-browser wait --load networkidle\` before the failing step
-3. **Wrong page state** — a previous step may have triggered unexpected navigation; re-orient with \`agent-browser snapshot\`
-4. **Form validation** — input values from the recording may need adjustment for the target environment
-
-### Tips
-
-- Steps are sequential — order matters
+- Steps are sequential \u2014 order matters
 - After \`agent-browser open\`, always wait for the page to load before interacting
-- \`snapshot\` is the agent's eyes — use it liberally when something breaks
-- CSS selectors from recordings can break when the site changes; the step description comment tells the agent *what* to click, so it can find the element another way
+- \`snapshot\` is the agent\u2019s eyes \u2014 use it when something breaks
+- CSS selectors can break when the site changes; the step comment tells you _what_ to target so you can find it another way
+- A step may contain multiple commands (e.g. click + navigate)
 `;
 
 export class SandboxManager {

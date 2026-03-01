@@ -14,19 +14,15 @@ export const SkillSchema = z
 
 export const CreateSkillSchema = z
   .object({
-    name: z.string().min(1),
     filename: z.string().min(1),
     content: z.string().min(1),
-    description: z.string().optional(),
   })
   .openapi("CreateSkill");
 
 export const UpdateSkillSchema = z
   .object({
-    name: z.string().min(1).optional(),
     filename: z.string().min(1).optional(),
     content: z.string().min(1).optional(),
-    description: z.string().nullable().optional(),
   })
   .openapi("UpdateSkill");
 

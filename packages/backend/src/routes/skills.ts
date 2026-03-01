@@ -42,10 +42,9 @@ skillsRouter.openapi(createSkill, async (c) => {
   const skill = await db
     .insertInto("skills")
     .values({
-      name: body.name,
+      name: "browser-recording-replay",
       filename: body.filename,
       content: body.content,
-      description: body.description ?? null,
     })
     .returningAll()
     .executeTakeFirstOrThrow();
