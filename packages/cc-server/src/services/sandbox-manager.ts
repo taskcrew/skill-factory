@@ -1,13 +1,8 @@
-import { resolve, dirname } from "node:path";
 import { Daytona, Image, type Sandbox } from "@daytonaio/sdk";
+import { resolve, dirname } from "node:path";
 
 import { config } from "../config";
-import { logger } from "../logger";
-
-const CC_SERVER_DOCKERFILE = resolve(
-  dirname(import.meta.filename),
-  "../../../cc-server/Dockerfile",
-);
+import { logger } from "../config/logger";
 
 export type SandboxInfo = {
   sandboxId: string;
@@ -16,6 +11,37 @@ export type SandboxInfo = {
 };
 
 const CC_SERVER_PORT = 3002;
+
+// Resolve the cc-server package root relative to this file
+const CC_SERVER_ROOT = resolve(dirname(import.meta.filename), "..", "..");
+
+function buildCcServerImage(): Image {
+  return Image.base("oven/bun:1-slim")
+    .runCommands(
+      // System deps needed by Claude Code
+      "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq && rm -rf /var/lib/apt/lists/*",
+      // Install Claude Code CLI globally — the SDK spawns it as a subprocess
+      "bun install -g @anthropic-ai/claude-code",
+      // Create a non-root user — Claude Code refuses --dangerously-skip-permissions as root
+      "useradd -m -s /bin/bash claude",
+      // Create workspace for Claude Code to operate in
+      "mkdir -p /workspace && chown claude:claude /workspace",
+      "mkdir -p /app",
+    )
+    // Add cc-server source into the image
+    .addLocalDir(CC_SERVER_ROOT, "/app")
+    .workdir("/app")
+    .runCommands(
+      // Install cc-server dependencies
+      "bun install --production",
+      // Give the non-root user ownership of /app
+      "chown -R claude:claude /app",
+    )
+    .env({
+      PORT: String(CC_SERVER_PORT),
+      HOST: "0.0.0.0",
+    });
+}
 
 export class SandboxManager {
   private readonly daytona: Daytona;
@@ -37,13 +63,13 @@ export class SandboxManager {
     disk?: number;
     autostopMinutes?: number;
   }): Promise<SandboxInfo> {
-    this.log.info("Creating Daytona sandbox from cc-server Dockerfile");
+    this.log.info("Creating Daytona sandbox with cc-server image");
 
     const sandbox = await this.daytona.create(
       {
-        image: Image.fromDockerfile(CC_SERVER_DOCKERFILE),
+        image: buildCcServerImage(),
         language: "typescript",
-        user: "appuser",
+        user: "claude",
         envVars: {
           ANTHROPIC_API_KEY: config.anthropic.apiKey,
           ...(config.anthropic.baseUrlOverride
@@ -59,10 +85,10 @@ export class SandboxManager {
         autoStopInterval: opts?.autostopMinutes ?? 30,
       },
       {
-        timeout: 300,
         onSnapshotCreateLogs: (chunk) => {
-          this.log.debug({ chunk: chunk.trimEnd() }, "Image build log");
+          this.log.debug({ chunk: chunk.trim() }, "Image build log");
         },
+        timeout: 300, // 5 min for image build
       },
     );
 
@@ -73,7 +99,7 @@ export class SandboxManager {
     const sessionId = `cc-server-${sandbox.id}`;
     await sandbox.process.createSession(sessionId);
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "cd /app && bun src/index.ts",
+      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
       runAsync: true,
     });
 
@@ -110,6 +136,53 @@ export class SandboxManager {
     this.sandboxes.delete(sandboxId);
     this.sandboxInfos.delete(sandboxId);
     this.log.info({ sandboxId }, "Sandbox destroyed");
+  }
+
+  async stopSandbox(sandboxId: string): Promise<void> {
+    const sandbox = this.sandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Sandbox ${sandboxId} not found`);
+    }
+
+    await this.daytona.stop(sandbox);
+    this.log.info({ sandboxId }, "Sandbox stopped");
+  }
+
+  async startSandbox(sandboxId: string): Promise<SandboxInfo> {
+    const sandbox = this.sandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Sandbox ${sandboxId} not found`);
+    }
+
+    await this.daytona.start(sandbox);
+
+    // Restart cc-server after sandbox resume
+    const sessionId = `cc-server-${sandbox.id}`;
+    try {
+      await sandbox.process.createSession(sessionId);
+    } catch {
+      // Session may already exist from previous start
+    }
+    await sandbox.process.executeSessionCommand(sessionId, {
+      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
+      runAsync: true,
+    });
+
+    await this.waitForHealthy(sandbox);
+
+    const preview = await sandbox.getPreviewLink(CC_SERVER_PORT);
+
+    const info: SandboxInfo = {
+      sandboxId: sandbox.id,
+      baseUrl: preview.url,
+      previewToken: preview.token,
+    };
+
+    this.sandboxInfos.set(sandbox.id, info);
+
+    this.log.info({ sandboxId, url: preview.url }, "Sandbox restarted");
+
+    return info;
   }
 
   getSandboxInfo(sandboxId: string): SandboxInfo | undefined {
