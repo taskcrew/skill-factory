@@ -10,6 +10,7 @@ const EnvSchema = z.object({
   CLAUDE_PROVIDER: z.string().min(1).default("anthropic"),
   DAYTONA_API_KEY: z.string().min(1).optional(),
   DAYTONA_TARGET: z.string().min(1).default("us"),
+  BROWSER_USE_CDP_URL: z.string().optional(),
 });
 
 const normalizedEnv = {
@@ -45,6 +46,9 @@ export const config = {
   daytona: {
     apiKey: env.DAYTONA_API_KEY,
     target: env.DAYTONA_TARGET,
+  },
+  browserUse: {
+    cdpUrl: env.BROWSER_USE_CDP_URL,
   },
   logLevel: env.LOG_LEVEL,
 } as const;

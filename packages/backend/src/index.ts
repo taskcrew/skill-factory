@@ -6,6 +6,7 @@ import { db } from "./db";
 import { buildBaseApp } from "./app";
 import { agentRouter } from "./routes/agent";
 import { sessionsRouter } from "./routes/sessions";
+import { engine } from "./socket";
 
 // Ensure sandbox singleton is initialized at startup
 import "./services/sandbox";
@@ -55,9 +56,19 @@ app.doc31("/api/openapi.json", {
 
 app.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }));
 
+const { websocket } = engine.handler();
+
 const server = Bun.serve({
   port: Number(process.env.PORT) || 3001,
-  fetch: app.fetch,
+  idleTimeout: 30,
+  fetch(req, server) {
+    const url = new URL(req.url);
+    if (url.pathname.startsWith("/socket.io/")) {
+      return engine.handleRequest(req, server);
+    }
+    return app.fetch(req, server);
+  },
+  websocket,
 });
 
-console.log(`Backend listening on http://localhost:${server.port}`);
+console.log(`Backend listening on http://localhost:${server.port} (Socket.IO attached)`);

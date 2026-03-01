@@ -45,6 +45,14 @@ export class BrowserUseService {
     return res;
   }
 
+  async createSession(): Promise<BrowserSession> {
+    this.log.info("Creating browser session");
+    const res = await this.apiFetch("/browsers", { method: "POST" });
+    const data = (await res.json()) as { id: string; status: string };
+    this.log.info({ sessionId: data.id, status: data.status }, "Browser session created");
+    return { id: data.id, status: data.status };
+  }
+
   async getSessionInfo(id: string): Promise<BrowserSessionInfo> {
     this.log.debug({ sessionId: id }, "Fetching browser session info");
 
