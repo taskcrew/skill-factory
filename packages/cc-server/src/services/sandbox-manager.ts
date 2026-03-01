@@ -189,7 +189,7 @@ export class SandboxManager {
     return this.sandboxInfos.get(sandboxId);
   }
 
-  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 30_000): Promise<void> {
+  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 60_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const interval = 1_000;
 
