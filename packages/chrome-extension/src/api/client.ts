@@ -87,5 +87,5 @@ function preparePayload(
   };
 }
 
-// Mock endpoint for development/testing
-export const MOCK_ENDPOINT = "https://api.example.com/recordings";
+// Default backend URL
+export const DEFAULT_BACKEND_URL = "http://localhost:3001";

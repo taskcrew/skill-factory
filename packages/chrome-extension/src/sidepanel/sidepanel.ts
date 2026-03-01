@@ -17,7 +17,7 @@ import { RecordedEventType } from "@shared/types/events";
 import { MessageType } from "@shared/types/messages";
 import { RecordingStatus } from "@shared/types/recording";
 
-import { MOCK_ENDPOINT } from "../api/client";
+import { DEFAULT_BACKEND_URL } from "../api/client";
 import { VoiceRecorder } from "@voice/recorder";
 import type {
   TranscriptSegment,
@@ -120,7 +120,7 @@ class PopupController {
     // Transcript toggle
     this.transcriptToggle = document.getElementById("transcriptToggle") as HTMLButtonElement;
 
-    this.apiEndpointInput.value = MOCK_ENDPOINT;
+    this.apiEndpointInput.value = DEFAULT_BACKEND_URL;
     this.loadPersistedSettings();
 
     this.setupEventListeners();
@@ -140,7 +140,7 @@ class PopupController {
     this.barPauseBtn.addEventListener("click", () => this.togglePause());
     this.barVoiceBtn.addEventListener("click", () => this.toggleVoice());
     this.barDeleteBtn.addEventListener("click", () => this.clearRecording());
-    this.barDoneBtn.addEventListener("click", () => this.exportRecording("raw-events"));
+    this.barDoneBtn.addEventListener("click", () => this.submitSkill());
 
     // Transcript toggle
     this.transcriptToggle.addEventListener("click", () => {
@@ -263,6 +263,85 @@ class PopupController {
     } catch (error) {
       console.error("Failed to export:", error);
       alert("Export failed");
+    }
+  }
+
+  private async submitSkill(): Promise<void> {
+    if (!this.currentSession || this.currentSession.events.length === 0) {
+      alert("No recording to submit");
+      return;
+    }
+
+    // Stop recording first if still active
+    if (this.currentSession.status === "recording") {
+      if (this.isVoiceActive) await this.stopVoice();
+      await chrome.runtime.sendMessage({ type: MessageType.StopRecording });
+      await this.loadCurrentState();
+    }
+
+    const backendUrl = this.apiEndpointInput.value.trim() || DEFAULT_BACKEND_URL;
+
+    try {
+      this.barDoneBtn.disabled = true;
+      this.barDoneBtn.textContent = "Submitting...";
+
+      // Get agent-browser export from background
+      const exportResponse = await chrome.runtime.sendMessage({
+        type: MessageType.ExportRecording,
+        format: "agent-browser",
+      });
+
+      if (!exportResponse?.success || !exportResponse?.data) {
+        throw new Error(exportResponse?.error || "Export failed");
+      }
+
+      const { content } = exportResponse.data;
+
+      // Prompt user for a skill name
+      const rawName = prompt("Name your skill:", "my-skill");
+      if (!rawName) {
+        return; // User cancelled
+      }
+
+      // Sanitize to agentskills.io spec: lowercase, hyphens only, no leading/trailing/consecutive hyphens
+      const skillName = rawName
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 64);
+
+      if (!skillName) {
+        alert("Invalid skill name");
+        return;
+      }
+
+      const startUrl = this.currentSession.metadata.startUrl || "unknown page";
+      const eventCount = this.currentSession.events.length;
+
+      const res = await fetch(`${backendUrl}/api/skills`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: skillName,
+          filename: "script.sh",
+          content,
+          description: `Recorded ${eventCount} browser actions from ${startUrl}. Replay with agent-browser CLI.`,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`${res.status} ${errText}`);
+      }
+
+      alert("Skill saved!");
+    } catch (error) {
+      console.error("Failed to submit skill:", error);
+      alert(`Failed to save skill: ${error}`);
+    } finally {
+      this.barDoneBtn.disabled = false;
+      this.barDoneBtn.textContent = "Done";
     }
   }
 
