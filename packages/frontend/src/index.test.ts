@@ -1,7 +1,12 @@
 import { test, expect } from "bun:test";
 
-test("frontend index exports server config", async () => {
-  // Verify the HTML file exists and is importable
+test("index.html exists", async () => {
   const file = Bun.file(import.meta.dir + "/index.html");
   expect(await file.exists()).toBe(true);
+});
+
+test("router module exports router", async () => {
+  const { router } = await import("./router");
+  expect(router).toBeDefined();
+  expect(router.routeTree).toBeDefined();
 });

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: skill-factory-frontend
+    runtime: node
+    buildCommand: curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install
+    startCommand: ~/.bun/bin/bun run --cwd packages/frontend start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+    plan: free
