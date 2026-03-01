@@ -33,6 +33,7 @@ export type ExecuteRequest = {
   timeout?: number;
   disallowedTools?: string[];
   outputSchema?: Record<string, unknown>;
+  workspacePath?: string;
 };
 
 export type QueryRequest = {

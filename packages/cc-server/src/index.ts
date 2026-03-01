@@ -17,6 +17,7 @@ Bun.serve({
   fetch: app.fetch,
   port: config.server.port,
   hostname: config.server.host,
+  idleTimeout: 255,
 });
 
 logger.info(

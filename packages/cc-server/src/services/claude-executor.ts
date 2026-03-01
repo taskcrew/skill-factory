@@ -167,7 +167,7 @@ export class StreamingClaudeExecutor extends EventEmitter {
         prompt: request.task,
         options: {
           abortController,
-          cwd: this.defaultCwd,
+          cwd: request.workspacePath ?? this.defaultCwd,
           disallowedTools: request.disallowedTools,
           hooks,
           maxTurns: request.maxTurns,
