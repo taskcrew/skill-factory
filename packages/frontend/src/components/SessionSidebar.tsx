@@ -38,6 +38,13 @@ function convertBackendMessages(
     if (msg.type === "user") {
       const content = msg.content as {
         role: string;
+        message?: { role: string; content: Array<{
+          type: string;
+          text?: string;
+          tool_use_id?: string;
+          content?: unknown;
+          is_error?: boolean;
+        }> };
         content: Array<{
           type: string;
           text?: string;
@@ -46,7 +53,7 @@ function convertBackendMessages(
           is_error?: boolean;
         }>;
       };
-      const blocks = content.content ?? [];
+      const blocks = content.message?.content ?? content.content ?? [];
 
       // Plain text user messages
       const textParts = blocks
