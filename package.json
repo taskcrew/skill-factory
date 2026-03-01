@@ -14,5 +14,8 @@
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@daytonaio/sdk": "^0.148.0"
   }
 }

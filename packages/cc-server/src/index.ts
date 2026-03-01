@@ -1,11 +1,28 @@
-const server = Bun.serve({
-  port: 3002,
-  routes: {
-    "/": new Response("cc-server ok"),
-    "/api/health": {
-      GET: () => Response.json({ status: "ok", service: "cc-server" }),
-    },
-  },
+import { build } from "./app";
+import { config } from "./config";
+import { logger } from "./config/logger";
+
+process.on("unhandledRejection", (reason) => {
+  logger.error({ reason }, "[UNHANDLED_REJECTION]");
 });
 
-console.log(`cc-server listening on http://localhost:${server.port}`);
+process.on("uncaughtException", (error) => {
+  logger.error({ error }, "[UNCAUGHT_EXCEPTION]");
+  process.exit(1);
+});
+
+const app = build();
+
+Bun.serve({
+  fetch: app.fetch,
+  port: config.server.port,
+  hostname: config.server.host,
+});
+
+logger.info(
+  {
+    host: config.server.host,
+    port: config.server.port,
+  },
+  "cc-server listening",
+);
