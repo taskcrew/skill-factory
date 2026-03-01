@@ -4,10 +4,12 @@ import { db } from "../db";
 import { logger } from "../logger";
 import {
   BrowserPreviewSchema,
+  CreateMessageSchema,
   CreateSessionSchema,
   ErrorSchema,
   ListSessionsQuerySchema,
   PaginatedSessionsSchema,
+  SessionMessageSchema,
   SessionSchema,
   SessionWithMessagesSchema,
   UpdateSessionSchema,
@@ -58,6 +60,21 @@ sessionsRouter.openapi(createSession, async (c) => {
     })
     .returningAll()
     .executeTakeFirstOrThrow();
+
+  // Persist initial message if provided
+  if (body.initial_message) {
+    await db
+      .insertInto("session_messages")
+      .values({
+        session_id: session.id,
+        type: "user",
+        content: JSON.stringify({
+          role: "user",
+          content: [{ type: "text", text: body.initial_message }],
+        }),
+      })
+      .execute();
+  }
 
   // Auto-provision sandbox
   try {
@@ -179,6 +196,61 @@ sessionsRouter.openapi(getSession, async (c) => {
     .execute();
 
   return c.json({ ...session, messages } as any, 200);
+});
+
+// POST /:id/messages — Add a message to a session
+const createMessage = createRoute({
+  method: "post",
+  path: "/{id}/messages",
+  tags: ["Sessions"],
+  summary: "Add a message to a session",
+  request: {
+    params: SessionSchema.pick({ id: true }),
+    body: {
+      content: { "application/json": { schema: CreateMessageSchema } },
+      required: true,
+    },
+  },
+  responses: {
+    201: {
+      description: "Message created",
+      content: { "application/json": { schema: SessionMessageSchema } },
+    },
+    404: {
+      description: "Session not found",
+      content: { "application/json": { schema: ErrorSchema } },
+    },
+  },
+});
+
+sessionsRouter.openapi(createMessage, async (c) => {
+  const { id } = c.req.valid("param");
+  const body = c.req.valid("json");
+
+  const session = await db
+    .selectFrom("sessions")
+    .select("id")
+    .where("id", "=", id)
+    .executeTakeFirst();
+
+  if (!session) {
+    return c.json({ error: "Session not found" }, 404);
+  }
+
+  const message = await db
+    .insertInto("session_messages")
+    .values({
+      session_id: id,
+      type: "user",
+      content: JSON.stringify({
+        role: "user",
+        content: [{ type: "text", text: body.content }],
+      }),
+    })
+    .returningAll()
+    .executeTakeFirstOrThrow();
+
+  return c.json(message as any, 201);
 });
 
 // PATCH /:id — Update session

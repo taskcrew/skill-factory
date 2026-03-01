@@ -30,7 +30,7 @@ export function RootLayout() {
           </ul>
         </div>
       </div>
-      <main className="container mx-auto p-4">
+      <main>
         <Outlet />
       </main>
     </div>
