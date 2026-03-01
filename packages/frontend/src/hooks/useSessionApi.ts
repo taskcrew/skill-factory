@@ -1,7 +1,7 @@
 import { useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-const API_BASE = "http://localhost:3001";
+const API_BASE = process.env.BACKEND_URL ?? "http://localhost:3001";
 
 interface SessionResponse {
   id: string;
