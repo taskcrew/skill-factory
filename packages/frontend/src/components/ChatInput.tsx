@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useChatContext } from "../context/ChatContext.tsx";
 import { useSocket } from "../hooks/useSocket.ts";
+import { SkillSelector } from "./SkillSelector.tsx";
 
 export function ChatInput() {
   const [text, setText] = useState("");
-  const { state } = useChatContext();
+  const { state, dispatch } = useChatContext();
   const { sendMessage } = useSocket();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +40,13 @@ export function ChatInput() {
           {state.error}
         </div>
       )}
+      <div className="flex items-center gap-2 max-w-4xl mx-auto mb-2">
+        <SkillSelector
+          value={state.selectedSkillId}
+          onChange={(skillId) => dispatch({ type: "SET_SKILL_ID", skillId })}
+          disabled={state.isAgentRunning || !!state.sessionId}
+        />
+      </div>
       <div className="flex gap-2 max-w-4xl mx-auto">
         <input
           ref={inputRef}

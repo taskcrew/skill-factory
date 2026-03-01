@@ -23,6 +23,7 @@ export type ChatAction =
   | { type: "LIFECYCLE_EVENT"; payload: LifecycleEvent }
   | { type: "SET_ERROR"; error: string }
   | { type: "SET_SESSION_ID"; sessionId: string }
+  | { type: "SET_SKILL_ID"; skillId: string | null }
   | { type: "LOAD_SESSION"; sessionId: string; messages: ChatMessage[] }
   | { type: "CLEAR_SESSION" };
 
@@ -32,6 +33,7 @@ let msgCounter = 0;
 
 const emptyState: ChatSession = {
   sessionId: null,
+  selectedSkillId: null,
   messages: [],
   isConnected: false,
   isAgentRunning: false,
@@ -97,6 +99,9 @@ function chatReducer(state: ChatSession, action: ChatAction): ChatSession {
 
     case "SET_SESSION_ID":
       return { ...state, sessionId: action.sessionId };
+
+    case "SET_SKILL_ID":
+      return { ...state, selectedSkillId: action.skillId };
 
     case "LOAD_SESSION":
       return {

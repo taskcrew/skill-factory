@@ -8,6 +8,7 @@ export interface SessionTable {
   status: Generated<string>;
   config: Generated<unknown>;
   browser_session_id: string | null;
+  skill_id: string | null;
   sandbox_id: string | null;
   sdk_init: unknown | null;
   result: unknown | null;

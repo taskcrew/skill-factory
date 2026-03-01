@@ -26,15 +26,18 @@ export function useSessionApi() {
   const inflightRef = useRef<Promise<SessionResponse> | null>(null);
 
   const createSession = useCallback(
-    async (name: string, initialMessage: string): Promise<SessionResponse> => {
+    async (name: string, initialMessage: string, skillId?: string | null): Promise<SessionResponse> => {
       // Deduplicate concurrent calls (e.g. double-click)
       if (inflightRef.current) return inflightRef.current;
 
       const promise = (async () => {
+        const body: Record<string, unknown> = { name, initial_message: initialMessage };
+        if (skillId) body.skill_id = skillId;
+
         const res = await fetch(`${BACKEND_URL}/api/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, initial_message: initialMessage }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
         return res.json() as Promise<SessionResponse>;
