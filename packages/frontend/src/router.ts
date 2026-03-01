@@ -4,7 +4,8 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { RootLayout, RootErrorComponent } from "./routes/__root";
-import { HomePage } from "./routes/index";
+import { ChatPage } from "./routes/chat";
+import { LibraryPage } from "./routes/library";
 import { NotFoundPage } from "./routes/not-found";
 
 const rootRoute = createRootRoute({
@@ -16,10 +17,16 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: HomePage,
+  component: ChatPage,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute]);
+const libraryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/library",
+  component: LibraryPage,
+});
+
+const routeTree = rootRoute.addChildren([indexRoute, libraryRoute]);
 
 export const router = createRouter({
   routeTree,

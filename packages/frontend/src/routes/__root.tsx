@@ -1,5 +1,10 @@
 import { Link, Outlet } from "@tanstack/react-router";
 
+const navLinks = [
+  { to: "/" as const, label: "Chat" },
+  { to: "/library" as const, label: "Library" },
+] as const;
+
 export function RootLayout() {
   return (
     <div className="min-h-screen bg-base-200">
@@ -8,6 +13,21 @@ export function RootLayout() {
           <Link to="/" className="btn btn-ghost text-xl">
             Skill Factory
           </Link>
+        </div>
+        <div className="flex-none">
+          <ul className="menu menu-horizontal px-1">
+            {navLinks.map((link) => (
+              <li key={link.to}>
+                <Link
+                  to={link.to}
+                  activeProps={{ className: "active" }}
+                  activeOptions={{ exact: true }}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
       <main className="container mx-auto p-4">
