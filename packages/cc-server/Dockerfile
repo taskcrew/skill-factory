@@ -1,12 +1,19 @@
-FROM oven/bun:1-slim
+FROM node:22-slim
 
-# System dependencies needed by Claude Code
+# System dependencies
 RUN apt-get update && apt-get install -y \
-  git bash curl python3 python3-venv wget jq gnupg \
+  git bash curl python3 python3-venv wget jq gnupg unzip \
   && rm -rf /var/lib/apt/lists/*
 
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash \
+  && ln -s /root/.bun/bin/bun /usr/local/bin/bun
+
 # Install Claude Code CLI globally (the SDK spawns it as a subprocess)
-RUN bun install -g @anthropic-ai/claude-code
+RUN npm install -g @anthropic-ai/claude-code
+
+# Install agent-browser for browser automation via CDP
+RUN npm install -g agent-browser
 
 # Create workspace directory for Claude Code to operate in
 RUN mkdir -p /workspace && chmod 777 /workspace
