@@ -115,10 +115,10 @@ export function proxySandboxQueryHandler(manager: SandboxManager) {
     if (!upstream.ok) {
       const text = await upstream.text();
       c.get("log").error(
-        { sandboxId, status: upstream.status, body: text.slice(0, 500) },
+        { sandboxId, status: upstream.status, upstreamBody: text },
         "Sandbox query returned error",
       );
-      return c.json({ error: "Sandbox returned error", status: upstream.status }, 502);
+      return c.json({ error: "Sandbox returned error", status: upstream.status, detail: text }, 502);
     }
 
     let data: unknown;

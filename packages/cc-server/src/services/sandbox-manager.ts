@@ -22,8 +22,10 @@ function buildCcServerImage(): Image {
       "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq && rm -rf /var/lib/apt/lists/*",
       // Install Claude Code CLI globally — the SDK spawns it as a subprocess
       "bun install -g @anthropic-ai/claude-code",
+      // Create a non-root user — Claude Code refuses --dangerously-skip-permissions as root
+      "useradd -m -s /bin/bash claude",
       // Create workspace for Claude Code to operate in
-      "mkdir -p /workspace && chmod 777 /workspace",
+      "mkdir -p /workspace && chown claude:claude /workspace",
       "mkdir -p /app",
     )
     // Add cc-server source into the image
@@ -32,6 +34,8 @@ function buildCcServerImage(): Image {
     .runCommands(
       // Install cc-server dependencies
       "bun install --production",
+      // Give the non-root user ownership of /app
+      "chown -R claude:claude /app",
     )
     .env({
       PORT: String(CC_SERVER_PORT),
@@ -65,6 +69,7 @@ export class SandboxManager {
       {
         image: buildCcServerImage(),
         language: "typescript",
+        user: "claude",
         envVars: {
           ANTHROPIC_API_KEY: config.anthropic.apiKey,
           ...(config.anthropic.baseUrlOverride
@@ -94,7 +99,7 @@ export class SandboxManager {
     const sessionId = `cc-server-${sandbox.id}`;
     await sandbox.process.createSession(sessionId);
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "cd /app && bun src/index.ts",
+      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
       runAsync: true,
     });
 
@@ -159,7 +164,7 @@ export class SandboxManager {
       // Session may already exist from previous start
     }
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "cd /app && bun src/index.ts",
+      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
       runAsync: true,
     });
 

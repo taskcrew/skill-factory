@@ -124,19 +124,26 @@ export function queryHandler() {
     const body = parsed.data;
     const structuredOutputPrompt = buildStructuredOutputPrompt(body.outputSchema);
     const messages: SDKMessage[] = [];
-    const stream = query({
-      prompt: body.task,
-      options: {
-        cwd: body.workspacePath ?? "/workspace",
-        mcpServers: buildSdkMcpServers(body.mcpServers),
-        model: body.model,
-        permissionMode: "bypassPermissions",
-        ...(structuredOutputPrompt ? { appendSystemPrompt: structuredOutputPrompt } : {}),
-      },
-    });
 
-    for await (const message of stream) {
-      messages.push(message);
+    try {
+      const stream = query({
+        prompt: body.task,
+        options: {
+          cwd: body.workspacePath ?? "/workspace",
+          mcpServers: buildSdkMcpServers(body.mcpServers),
+          model: body.model,
+          permissionMode: "bypassPermissions",
+          ...(structuredOutputPrompt ? { appendSystemPrompt: structuredOutputPrompt } : {}),
+        },
+      });
+
+      for await (const message of stream) {
+        messages.push(message);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      c.get("log").error({ error: message }, "Query execution failed");
+      return c.json({ error: message }, 500);
     }
 
     const result = getResultText(messages);
