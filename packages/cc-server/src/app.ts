@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import type { EventEmitter } from "node:events";
 
 import { logger } from "./config/logger";
 import { executeHandler } from "./handlers/execute";
@@ -12,12 +13,17 @@ import {
 } from "./handlers/sandbox";
 import { StreamingClaudeExecutor } from "./services/claude-executor";
 import type { SandboxManager } from "./services/sandbox-manager";
+import type { ExecuteRequest } from "./shared/types";
 import type { AppEnv } from "./types/hono-env";
 
 const startTime = Date.now();
 
+type ClaudeExecutorLike = Pick<EventEmitter, "on" | "off"> & {
+  executeTaskIterator: (request: ExecuteRequest) => AsyncGenerator<unknown, void>;
+};
+
 export function build(
-  executor = new StreamingClaudeExecutor(),
+  executor: ClaudeExecutorLike = new StreamingClaudeExecutor(),
   sandboxManager?: SandboxManager,
 ): Hono<AppEnv> {
   const app = new Hono<AppEnv>();

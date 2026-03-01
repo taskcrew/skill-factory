@@ -1,8 +1,8 @@
 import path from "node:path";
-import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { FileMigrationProvider, Migrator } from "kysely";
 import { db } from "./db";
+import { buildBaseApp } from "./app";
 import { agentRouter } from "./routes/agent";
 import { sessionsRouter } from "./routes/sessions";
 
@@ -36,9 +36,8 @@ if (error) {
 
 console.log("Migrations up to date");
 
-const app = new OpenAPIHono();
+const app = buildBaseApp();
 
-app.get("/api/health", (c) => c.json({ status: "ok", service: "backend" }));
 app.route("/api/sessions", sessionsRouter);
 app.route("/api/sessions", agentRouter);
 

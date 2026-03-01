@@ -1,6 +1,7 @@
 import { build } from "./app";
 import { config } from "./config";
 import { logger } from "./config/logger";
+import { StreamingClaudeExecutor } from "./services/claude-executor";
 import { SandboxManager } from "./services/sandbox-manager";
 
 process.on("unhandledRejection", (reason) => {
@@ -16,7 +17,7 @@ const sandboxManager = config.daytona.apiKey
   ? new SandboxManager()
   : undefined;
 
-const app = build(undefined, sandboxManager);
+const app = build(new StreamingClaudeExecutor(), sandboxManager);
 
 Bun.serve({
   fetch: app.fetch,

@@ -1,15 +1,19 @@
 import type { Context } from "hono";
 import { streamSSE } from "hono/streaming";
+import type { EventEmitter } from "node:events";
 
 import type { AppEnv } from "../types/hono-env";
 import type { ExecuteRequest, LifecycleEvent, SseEventType } from "../shared/types";
-import { StreamingClaudeExecutor } from "../services/claude-executor";
 
 function toSseData(event: unknown): string {
   return JSON.stringify(event);
 }
 
-export function executeHandler(executor: StreamingClaudeExecutor) {
+type ClaudeExecutorLike = Pick<EventEmitter, "on" | "off"> & {
+  executeTaskIterator: (request: ExecuteRequest) => AsyncGenerator<unknown, void>;
+};
+
+export function executeHandler(executor: ClaudeExecutorLike) {
   return async (c: Context<AppEnv>) => {
     let body: ExecuteRequest;
 
