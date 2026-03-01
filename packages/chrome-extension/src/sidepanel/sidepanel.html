@@ -23,6 +23,21 @@
           </button>
         </section>
 
+        <section id="voice-controls">
+          <div class="voice-toggle-row">
+            <button id="voiceBtn" class="btn-voice" disabled>
+              <span class="icon">&#127908;</span>
+              <span class="text">Voice Off</span>
+            </button>
+            <div id="voiceLevel" class="voice-level">
+              <div class="voice-level-bar"></div>
+            </div>
+          </div>
+          <div id="voiceStatus" class="voice-status" hidden>
+            <span class="voice-status-text"></span>
+          </div>
+        </section>
+
         <section id="status">
           <div class="status-indicator" data-status="idle">
             <span class="dot"></span>
@@ -55,7 +70,18 @@
               id="apiKey"
               placeholder="API Key (optional)"
             />
+            <input
+              type="password"
+              id="elevenLabsKey"
+              placeholder="ElevenLabs API Key (for voice)"
+            />
             <button id="uploadBtn" class="btn-secondary">Upload</button>
+          </div>
+        </section>
+        <section id="transcript" class="transcript-panel" hidden>
+          <h2>Transcript</h2>
+          <div id="transcriptContent" class="transcript-content">
+            <div id="transcriptPartial" class="transcript-partial"></div>
           </div>
         </section>
       </main>

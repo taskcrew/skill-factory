@@ -49,6 +49,8 @@ export interface RecordingSettings {
   excludeSelectors: string[];
   apiEndpoint?: string;
   apiKey?: string;
+  captureVoice: boolean;
+  elevenLabsApiKey?: string;
 }
 
 export const DEFAULT_RECORDING_SETTINGS: RecordingSettings = {
@@ -71,4 +73,6 @@ export const DEFAULT_RECORDING_SETTINGS: RecordingSettings = {
   excludeSelectors: [],
   apiEndpoint: undefined,
   apiKey: undefined,
+  captureVoice: false,
+  elevenLabsApiKey: undefined,
 };

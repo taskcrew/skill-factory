@@ -22,6 +22,7 @@ import type {
   SubmitEvent,
   TabActivatedEvent,
   TabCreatedEvent,
+  VoiceTranscriptEvent,
 } from "@shared/types";
 
 export interface AgentBrowserStep {
@@ -153,6 +154,11 @@ function convertEventToStep(event: RecordedEvent): AgentBrowserStep | null {
       return convertTabCreated(event as TabCreatedEvent);
     case "tabActivated":
       return convertTabActivated(event as TabActivatedEvent);
+    case "voiceTranscript":
+      return {
+        command: `# Voice: "${escapeShell((event as VoiceTranscriptEvent).text)}"`,
+        comment: "User narration",
+      };
     case "dragStart":
     case "tabClosed":
       return null;

@@ -42,6 +42,9 @@ export enum RecordedEventType {
   ViewportResize = "viewportResize",
   SessionStart = "sessionStart",
   SessionEnd = "sessionEnd",
+
+  // Voice
+  VoiceTranscript = "voiceTranscript",
 }
 
 // Element information captured with events
@@ -219,6 +222,11 @@ export interface TabClosedEvent extends BaseRecordedEvent {
   closedTabId: number;
 }
 
+export interface VoiceTranscriptEvent extends BaseRecordedEvent {
+  type: RecordedEventType.VoiceTranscript;
+  text: string;
+}
+
 // Union type for all events
 export type RecordedEvent =
   | ClickEvent
@@ -235,4 +243,5 @@ export type RecordedEvent =
   | ViewportResizeEvent
   | TabCreatedEvent
   | TabActivatedEvent
-  | TabClosedEvent;
+  | TabClosedEvent
+  | VoiceTranscriptEvent;

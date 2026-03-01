@@ -22,7 +22,8 @@
       "@background/*": ["src/background/*"],
       "@popup/*": ["src/popup/*"],
       "@export/*": ["src/export/*"],
-      "@api/*": ["src/api/*"]
+      "@api/*": ["src/api/*"],
+      "@voice/*": ["src/voice/*"]
     },
     "types": ["chrome", "vite/client"]
   },

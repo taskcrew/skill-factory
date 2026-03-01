@@ -1,14 +1,22 @@
 import type { RecordingSession } from "@shared/types";
+import { RecordedEventType } from "@shared/types/events";
 import { MessageType } from "@shared/types/messages";
 import { RecordingStatus } from "@shared/types/recording";
 
 import { MOCK_ENDPOINT } from "../api/client";
+import { VoiceRecorder } from "@voice/recorder";
+import type {
+  TranscriptSegment,
+  VoiceStatus,
+  VoiceError,
+} from "@voice/types";
 
 const SETTINGS_STORAGE_KEY = "popup_settings";
 
 interface PopupSettings {
   apiEndpoint: string;
   apiKey: string;
+  elevenLabsApiKey: string;
 }
 
 class PopupController {
@@ -20,6 +28,19 @@ class PopupController {
   private uploadBtn: HTMLButtonElement;
   private apiEndpointInput: HTMLInputElement;
   private apiKeyInput: HTMLInputElement;
+  private elevenLabsKeyInput: HTMLInputElement;
+
+  // Voice elements
+  private voiceBtn: HTMLButtonElement;
+  private voiceLevelBar: HTMLElement;
+  private voiceStatusEl: HTMLElement;
+  private transcriptPanel: HTMLElement;
+  private transcriptContent: HTMLElement;
+  private transcriptPartial: HTMLElement;
+
+  // Voice state
+  private voiceRecorder = new VoiceRecorder();
+  private isVoiceActive = false;
 
   private currentSession: RecordingSession | null = null;
   private refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -37,6 +58,27 @@ class PopupController {
       "apiEndpoint"
     ) as HTMLInputElement;
     this.apiKeyInput = document.getElementById("apiKey") as HTMLInputElement;
+    this.elevenLabsKeyInput = document.getElementById(
+      "elevenLabsKey"
+    ) as HTMLInputElement;
+
+    // Voice elements
+    this.voiceBtn = document.getElementById("voiceBtn") as HTMLButtonElement;
+    this.voiceLevelBar = document.querySelector(
+      ".voice-level-bar"
+    ) as HTMLElement;
+    this.voiceStatusEl = document.getElementById(
+      "voiceStatus"
+    ) as HTMLElement;
+    this.transcriptPanel = document.getElementById(
+      "transcript"
+    ) as HTMLElement;
+    this.transcriptContent = document.getElementById(
+      "transcriptContent"
+    ) as HTMLElement;
+    this.transcriptPartial = document.getElementById(
+      "transcriptPartial"
+    ) as HTMLElement;
 
     // Set default endpoint initially, then load persisted settings
     this.apiEndpointInput.value = MOCK_ENDPOINT;
@@ -51,10 +93,14 @@ class PopupController {
     this.recordBtn.addEventListener("click", () => this.toggleRecording());
     this.pauseBtn.addEventListener("click", () => this.togglePause());
     this.uploadBtn.addEventListener("click", () => this.uploadRecording());
+    this.voiceBtn.addEventListener("click", () => this.toggleVoice());
 
     // Persist settings on change
     this.apiEndpointInput.addEventListener("input", () => this.saveSettings());
     this.apiKeyInput.addEventListener("input", () => this.saveSettings());
+    this.elevenLabsKeyInput.addEventListener("input", () =>
+      this.saveSettings()
+    );
 
     document.querySelectorAll(".btn-export").forEach((btn) => {
       btn.addEventListener("click", (e) => {
@@ -67,7 +113,6 @@ class PopupController {
   }
 
   private startRefreshInterval(): void {
-    // Refresh state every second to keep UI updated
     this.refreshInterval = setInterval(() => {
       this.loadCurrentState();
     }, 1000);
@@ -169,6 +214,168 @@ class PopupController {
     }
   }
 
+  // --- Voice ---
+
+  private async toggleVoice(): Promise<void> {
+    if (this.isVoiceActive) {
+      await this.stopVoice();
+    } else {
+      await this.startVoice();
+    }
+  }
+
+  private async startVoice(): Promise<void> {
+    const apiKey =
+      this.elevenLabsKeyInput.value.trim() ||
+      (import.meta.env.VITE_ELEVENLABS_API_KEY as string) ||
+      "";
+    if (!apiKey) {
+      this.showVoiceError("Enter an ElevenLabs API key in settings below");
+      return;
+    }
+
+    this.isVoiceActive = true;
+    this.voiceBtn.dataset.active = "true";
+    this.voiceBtn.querySelector(".text")!.textContent = "Voice On";
+    this.transcriptPanel.hidden = false;
+
+    await this.voiceRecorder.start({
+      apiKey,
+      onTranscript: (segment) => this.handleTranscript(segment),
+      onPartial: (text) => this.handlePartialTranscript(text),
+      onLevelChange: (level) => this.handleLevelChange(level),
+      onStatusChange: (status) => this.handleVoiceStatus(status),
+      onError: (error) => this.handleVoiceError(error),
+    });
+  }
+
+  private async stopVoice(): Promise<void> {
+    this.isVoiceActive = false;
+    this.voiceBtn.dataset.active = "false";
+    this.voiceBtn.querySelector(".text")!.textContent = "Voice Off";
+    this.voiceLevelBar.style.height = "0%";
+
+    const result = await this.voiceRecorder.stop();
+    console.log(
+      `Voice stopped: ${result.segments.length} segments, audio ${result.audioBlob.size} bytes`
+    );
+  }
+
+  private handleTranscript(segment: TranscriptSegment): void {
+    // Add committed segment to transcript UI using safe DOM methods
+    const el = document.createElement("div");
+    el.className = "transcript-segment";
+
+    const timeSpan = document.createElement("span");
+    timeSpan.className = "time";
+    timeSpan.textContent = new Date(segment.timestamp).toLocaleTimeString();
+
+    const textNode = document.createTextNode(segment.text);
+
+    el.appendChild(timeSpan);
+    el.appendChild(textNode);
+    this.transcriptContent.insertBefore(el, this.transcriptPartial);
+    this.transcriptPartial.textContent = "";
+    this.transcriptPanel.scrollTop = this.transcriptPanel.scrollHeight;
+
+    // Send as event to background
+    this.sendVoiceEvent(segment);
+  }
+
+  private handlePartialTranscript(text: string): void {
+    this.transcriptPartial.textContent = text;
+    this.transcriptPanel.scrollTop = this.transcriptPanel.scrollHeight;
+  }
+
+  private handleLevelChange(level: number): void {
+    this.voiceLevelBar.style.height = `${level * 100}%`;
+  }
+
+  private handleVoiceStatus(status: VoiceStatus): void {
+    this.voiceStatusEl.hidden = status === "idle";
+    this.voiceStatusEl.dataset.status = status;
+    const textEl = this.voiceStatusEl.querySelector(".voice-status-text")!;
+
+    switch (status) {
+      case "connecting":
+        textEl.textContent = "Connecting...";
+        break;
+      case "recording":
+        textEl.textContent = "Listening";
+        break;
+      case "stopping":
+        textEl.textContent = "Stopping...";
+        break;
+      case "error":
+        break; // Error text set by handleVoiceError
+      default:
+        textEl.textContent = "";
+    }
+  }
+
+  private handleVoiceError(error: VoiceError): void {
+    console.error("Voice error:", JSON.stringify(error));
+    this.isVoiceActive = false;
+    this.voiceBtn.dataset.active = "false";
+    this.voiceBtn.querySelector(".text")!.textContent = "Voice Off";
+    this.voiceLevelBar.style.height = "0%";
+
+    if (error.code === "mic_permission_denied") {
+      // Side panels can't prompt for mic — open extension page where user can grant it
+      this.showVoiceError("Grant mic permission in the tab that opened, then try again");
+      chrome.tabs.create({
+        url: chrome.runtime.getURL("src/permissions/request-mic.html"),
+      });
+      return;
+    }
+
+    let message: string;
+    switch (error.code) {
+      case "mic_not_found":
+        message = "No microphone found";
+        break;
+      case "transcription_failed":
+        message = `Transcription failed: ${error.message}`;
+        break;
+      case "websocket_error":
+        message = `Connection error: ${error.message}`;
+        break;
+    }
+    this.showVoiceError(message);
+  }
+
+  private showVoiceError(message: string): void {
+    this.voiceStatusEl.hidden = false;
+    this.voiceStatusEl.dataset.status = "error";
+    this.voiceStatusEl.querySelector(".voice-status-text")!.textContent =
+      message;
+  }
+
+  private async sendVoiceEvent(segment: TranscriptSegment): Promise<void> {
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      await chrome.runtime.sendMessage({
+        type: MessageType.RecordEvent,
+        event: {
+          id: crypto.randomUUID(),
+          type: RecordedEventType.VoiceTranscript,
+          timestamp: segment.timestamp,
+          url: tab?.url || "",
+          tabId: tab?.id || 0,
+          text: segment.text,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send voice event:", error);
+    }
+  }
+
+  // --- UI ---
+
   private updateUI(): void {
     if (!this.currentSession) {
       this.setIdleState();
@@ -181,14 +388,15 @@ class PopupController {
     switch (status) {
       case RecordingStatus.Recording:
         this.recordBtn.querySelector(".text")!.textContent = "Stop Recording";
-        this.recordBtn.querySelector(".icon")!.textContent = "\u25A0"; // Stop icon
+        this.recordBtn.querySelector(".icon")!.textContent = "\u25A0";
         this.recordBtn.dataset.recording = "true";
         this.pauseBtn.disabled = false;
-        this.pauseBtn.querySelector(".icon")!.textContent = "\u2759\u2759"; // Pause icon
+        this.pauseBtn.querySelector(".icon")!.textContent = "\u2759\u2759";
         this.statusIndicator.querySelector(".label")!.textContent = "Recording";
+        this.voiceBtn.disabled = false;
         break;
       case RecordingStatus.Paused:
-        this.pauseBtn.querySelector(".icon")!.textContent = "\u25B6"; // Play icon
+        this.pauseBtn.querySelector(".icon")!.textContent = "\u25B6";
         this.statusIndicator.querySelector(".label")!.textContent = "Paused";
         break;
       case RecordingStatus.Stopped:
@@ -205,39 +413,55 @@ class PopupController {
 
   private setIdleState(): void {
     this.recordBtn.querySelector(".text")!.textContent = "Start Recording";
-    this.recordBtn.querySelector(".icon")!.textContent = "\u25CF"; // Record icon
+    this.recordBtn.querySelector(".icon")!.textContent = "\u25CF";
     this.recordBtn.dataset.recording = "false";
     this.pauseBtn.disabled = true;
     this.statusIndicator.querySelector(".label")!.textContent = "Ready";
     this.statusIndicator.dataset.status = "idle";
+    this.voiceBtn.disabled = true;
+    if (this.isVoiceActive) {
+      this.stopVoice();
+    }
   }
 
   private setStoppedState(): void {
     this.recordBtn.querySelector(".text")!.textContent = "Start Recording";
-    this.recordBtn.querySelector(".icon")!.textContent = "\u25CF"; // Record icon
+    this.recordBtn.querySelector(".icon")!.textContent = "\u25CF";
     this.recordBtn.dataset.recording = "false";
     this.pauseBtn.disabled = true;
     this.statusIndicator.querySelector(".label")!.textContent = "Stopped";
     this.statusIndicator.dataset.status = "stopped";
+    this.voiceBtn.disabled = true;
+    if (this.isVoiceActive) {
+      this.stopVoice();
+    }
   }
 
   private renderRecentEvents(): void {
     if (!this.currentSession) {
-      this.eventsList.innerHTML = "";
+      this.eventsList.textContent = "";
       return;
     }
 
     const recentEvents = this.currentSession.events.slice(-10).reverse();
-    this.eventsList.innerHTML = recentEvents
-      .map(
-        (event) => `
-      <div class="event-item" data-type="${event.type}">
-        <span class="event-type">${event.type}</span>
-        <span class="event-time">${new Date(event.timestamp).toLocaleTimeString()}</span>
-      </div>
-    `
-      )
-      .join("");
+    this.eventsList.textContent = "";
+    for (const event of recentEvents) {
+      const item = document.createElement("div");
+      item.className = "event-item";
+      item.dataset.type = event.type;
+
+      const typeSpan = document.createElement("span");
+      typeSpan.className = "event-type";
+      typeSpan.textContent = event.type;
+
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "event-time";
+      timeSpan.textContent = new Date(event.timestamp).toLocaleTimeString();
+
+      item.appendChild(typeSpan);
+      item.appendChild(timeSpan);
+      this.eventsList.appendChild(item);
+    }
   }
 
   private downloadFile(result: {
@@ -269,6 +493,9 @@ class PopupController {
         if (settings.apiKey) {
           this.apiKeyInput.value = settings.apiKey;
         }
+        if (settings.elevenLabsApiKey) {
+          this.elevenLabsKeyInput.value = settings.elevenLabsApiKey;
+        }
       }
     } catch (error) {
       console.error("Failed to load settings from storage:", error);
@@ -279,6 +506,7 @@ class PopupController {
     const settings: PopupSettings = {
       apiEndpoint: this.apiEndpointInput.value,
       apiKey: this.apiKeyInput.value,
+      elevenLabsApiKey: this.elevenLabsKeyInput.value,
     };
     try {
       await chrome.storage.local.set({ [SETTINGS_STORAGE_KEY]: settings });

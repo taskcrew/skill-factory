@@ -1,10 +1,14 @@
 import { resolve } from "path";
+import { config } from "dotenv";
 import { defineConfig } from "vite";
 import webExtension from "vite-plugin-web-extension";
+
+config({ path: resolve(__dirname, "../../.env") });
 
 export default defineConfig({
   plugins: [
     webExtension({
+      additionalInputs: ["src/permissions/request-mic.html"],
       manifest: () => ({
         manifest_version: 3,
         name: "Skill Factory Recorder",
@@ -23,10 +27,17 @@ export default defineConfig({
           "scripting",
           "cookies",
           "sidePanel",
+          "offscreen",
         ],
         side_panel: {
           default_path: "src/sidepanel/sidepanel.html",
         },
+        web_accessible_resources: [
+          {
+            resources: ["src/permissions/request-mic.html"],
+            matches: ["<all_urls>"],
+          },
+        ],
         host_permissions: ["<all_urls>"],
         content_scripts: [
           {
@@ -49,7 +60,13 @@ export default defineConfig({
       "@sidepanel": resolve(__dirname, "src/sidepanel"),
       "@export": resolve(__dirname, "src/export"),
       "@api": resolve(__dirname, "src/api"),
+      "@voice": resolve(__dirname, "src/voice"),
     },
+  },
+  define: {
+    "import.meta.env.VITE_ELEVENLABS_API_KEY": JSON.stringify(
+      process.env.ELEVENLABS_API_KEY || ""
+    ),
   },
   build: {
     outDir: "dist",
