@@ -2,6 +2,7 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { sql } from "kysely";
 import { db } from "../db";
 import {
+  BrowserPreviewSchema,
   CreateSessionSchema,
   ErrorSchema,
   ListSessionsQuerySchema,
@@ -10,6 +11,9 @@ import {
   SessionWithMessagesSchema,
   UpdateSessionSchema,
 } from "../schemas/session";
+import { BrowserUseService } from "../services/browser-use";
+
+const browserUseService = new BrowserUseService();
 
 export const sessionsRouter = new OpenAPIHono();
 
@@ -229,4 +233,56 @@ sessionsRouter.openapi(deleteSession, async (c) => {
   }
 
   return c.body(null, 204);
+});
+
+// GET /:id/browser-preview — Get browser preview URL
+const getBrowserPreview = createRoute({
+  method: "get",
+  path: "/{id}/browser-preview",
+  tags: ["Sessions"],
+  summary: "Get browser preview URL for a session",
+  request: {
+    params: SessionSchema.pick({ id: true }),
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: BrowserPreviewSchema } },
+      description: "Browser preview URL",
+    },
+    404: {
+      content: { "application/json": { schema: ErrorSchema } },
+      description: "Session or browser session not found",
+    },
+  },
+});
+
+sessionsRouter.openapi(getBrowserPreview, async (c) => {
+  const { id } = c.req.valid("param");
+
+  const session = await db
+    .selectFrom("sessions")
+    .select(["browser_session_id"])
+    .where("id", "=", id)
+    .executeTakeFirst();
+
+  if (!session) {
+    return c.json({ error: "Session not found" }, 404);
+  }
+
+  if (!session.browser_session_id) {
+    return c.json(
+      { error: "No browser session associated with this session" },
+      404,
+    );
+  }
+
+  const info = await browserUseService.getSessionInfo(
+    session.browser_session_id,
+  );
+
+  if (!info.liveUrl) {
+    return c.json({ error: "Browser session has no live URL" }, 404);
+  }
+
+  return c.json({ liveUrl: info.liveUrl }, 200);
 });
