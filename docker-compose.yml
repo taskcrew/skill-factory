@@ -33,6 +33,7 @@ services:
     volumes:
       - .:/app
     command: sh -c "bun install && bun --hot packages/backend/src/index.ts"
+    env_file: .env
     environment:
       DATABASE_URL: postgres://user:password@postgres:5432/skill_factory
       PORT: "3001"
