@@ -82,6 +82,7 @@ sessionsRouter.openapi(createSession, async (c) => {
     .values({
       name: body.name,
       config: JSON.stringify(body.config),
+      skill_id: body.skill_id ?? null,
       browser_session_id: browserSessionId,
       sandbox_id: null,
     })
@@ -124,6 +125,33 @@ sessionsRouter.openapi(createSession, async (c) => {
       .where("id", "=", session.id)
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    // Upload skill file to sandbox if skill_id was provided
+    if (body.skill_id) {
+      try {
+        const skill = await db
+          .selectFrom("skills")
+          .selectAll()
+          .where("id", "=", body.skill_id)
+          .executeTakeFirst();
+
+        if (skill) {
+          await sandboxManager.uploadSkill(
+            info.sandboxId,
+            skill.filename,
+            skill.content,
+          );
+          log.info(
+            { sessionId: session.id, skillId: skill.id, filename: skill.filename },
+            "Skill uploaded to sandbox",
+          );
+        } else {
+          log.warn({ skillId: body.skill_id }, "Skill not found, skipping upload");
+        }
+      } catch (err) {
+        log.error({ err, skillId: body.skill_id }, "Failed to upload skill to sandbox");
+      }
+    }
 
     log.info(
       {

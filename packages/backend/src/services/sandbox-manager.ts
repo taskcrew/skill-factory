@@ -110,6 +110,29 @@ export class SandboxManager {
     this.log.info({ sandboxId }, "Sandbox destroyed");
   }
 
+  async uploadSkill(
+    sandboxId: string,
+    filename: string,
+    content: string,
+  ): Promise<void> {
+    const sandbox = this.sandboxes.get(sandboxId);
+    if (!sandbox) {
+      throw new Error(`Sandbox ${sandboxId} not found in local registry`);
+    }
+
+    const skillDir = `/workspace/.claude/skills/${filename}`;
+    await sandbox.process.executeCommand(`mkdir -p ${skillDir}`);
+    await sandbox.fs.uploadFile(
+      Buffer.from(content, "utf-8"),
+      `${skillDir}/SKILL.md`,
+    );
+
+    this.log.info(
+      { sandboxId, filename },
+      "Skill uploaded to sandbox",
+    );
+  }
+
   getSandboxInfo(sandboxId: string): SandboxInfo | undefined {
     return this.sandboxInfos.get(sandboxId);
   }

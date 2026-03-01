@@ -66,7 +66,7 @@ export function useSocket(): SocketActions {
           if (!currentSessionId) {
             // First message — create session (provisions sandbox)
             const sessionName = text.slice(0, 50);
-            const session = await createSession(sessionName, text);
+            const session = await createSession(sessionName, text, state.selectedSkillId);
             currentSessionId = session.id;
             dispatch({ type: "SET_SESSION_ID", sessionId: session.id });
           }
@@ -85,7 +85,7 @@ export function useSocket(): SocketActions {
         }
       })();
     },
-    [dispatch, createSession]
+    [dispatch, createSession, state.selectedSkillId]
   );
 
   return { sendMessage };

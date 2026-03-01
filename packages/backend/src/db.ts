@@ -8,6 +8,7 @@ export interface SessionTable {
   status: Generated<string>;
   config: Generated<unknown>;
   browser_session_id: string | null;
+  skill_id: string | null;
   sandbox_id: string | null;
   sdk_init: unknown | null;
   result: unknown | null;
@@ -26,9 +27,20 @@ export interface SessionMessageTable {
   created_at: Generated<Date>;
 }
 
+export interface SkillTable {
+  id: Generated<string>;
+  name: string;
+  filename: string;
+  content: string;
+  description: string | null;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
 export interface Database {
   sessions: SessionTable;
   session_messages: SessionMessageTable;
+  skills: SkillTable;
 }
 
 export const db = new Kysely<Database>({

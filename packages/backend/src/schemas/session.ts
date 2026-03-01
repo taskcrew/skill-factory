@@ -9,6 +9,7 @@ export const SessionSchema = z
     claude_session_id: z.string().nullable(),
     status: z.enum(sessionStatuses),
     config: z.record(z.string(), z.unknown()),
+    skill_id: z.string().uuid().nullable(),
     browser_session_id: z.string().nullable(),
     sandbox_id: z.string().nullable(),
     sdk_init: z.record(z.string(), z.unknown()).nullable(),
@@ -38,6 +39,7 @@ export const CreateSessionSchema = z
   .object({
     name: z.string().min(1),
     config: z.record(z.string(), z.unknown()).optional().default({}),
+    skill_id: z.string().uuid().optional(),
     browser_session_id: z.string().optional(),
     initial_message: z.string().min(1).optional(),
   })
@@ -53,6 +55,7 @@ export const UpdateSessionSchema = z
   .object({
     name: z.string().min(1).optional(),
     config: z.record(z.string(), z.unknown()).optional(),
+    skill_id: z.string().uuid().nullable().optional(),
     status: z.enum(sessionStatuses).optional(),
     claude_session_id: z.string().optional(),
     browser_session_id: z.string().nullable().optional(),

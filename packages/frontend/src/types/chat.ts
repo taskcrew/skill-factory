@@ -138,6 +138,7 @@ export interface ChatMessage {
 
 export interface ChatSession {
   sessionId: string | null;
+  selectedSkillId: string | null;
   messages: ChatMessage[];
   isConnected: boolean;
   isAgentRunning: boolean;
