@@ -94,7 +94,12 @@ io.on("connection", (socket: Socket) => {
           "Content-Type": "application/json",
           "x-daytona-preview-token": info.previewToken,
         },
-        body: JSON.stringify({ task: augmentedTask, memory, ...executeOpts }),
+        body: JSON.stringify({
+          task: augmentedTask,
+          memory,
+          ...executeOpts,
+          ...(session.claude_session_id ? { sessionId: session.claude_session_id } : {}),
+        }),
       });
 
       if (!upstream.ok) {
@@ -145,6 +150,15 @@ io.on("connection", (socket: Socket) => {
                   socket.emit("lifecycle", parsed);
                   if (parsed.type === "session_completed" || parsed.type === "session_error") {
                     sawCompletion = true;
+                    if (parsed.sessionId) {
+                      db.updateTable("sessions")
+                        .set({ claude_session_id: parsed.sessionId })
+                        .where("id", "=", sessionId)
+                        .execute()
+                        .catch((err) =>
+                          log.error({ err, sessionId }, "Failed to persist claude_session_id"),
+                        );
+                    }
                   }
                 } else if (currentEvent === "error") {
                   socket.emit("execution_error", parsed);
