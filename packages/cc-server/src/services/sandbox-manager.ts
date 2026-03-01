@@ -16,14 +16,15 @@ const CC_SERVER_PORT = 3002;
 const CC_SERVER_ROOT = resolve(dirname(import.meta.filename), "..", "..");
 
 function buildCcServerImage(): Image {
-  return Image.base("oven/bun:1-slim")
+  return Image.base("node:22-slim")
     .runCommands(
-      // System deps needed by Claude Code + agent-browser
-      "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq nodejs && rm -rf /var/lib/apt/lists/*",
-      // Install Claude Code CLI globally — the SDK spawns it as a subprocess
-      "bun install -g @anthropic-ai/claude-code",
+      // System deps + Bun runtime
+      "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq unzip && rm -rf /var/lib/apt/lists/*",
+      "curl -fsSL https://bun.sh/install | bash && ln -s /root/.bun/bin/bun /usr/local/bin/bun",
+      // Install Claude Code CLI globally
+      "npm install -g @anthropic-ai/claude-code",
       // Install agent-browser for browser automation via CDP
-      "bun install -g agent-browser",
+      "npm install -g agent-browser",
       // Create a non-root user — Claude Code refuses --dangerously-skip-permissions as root
       "useradd -m -s /bin/bash claude",
       // Create workspace for Claude Code to operate in
