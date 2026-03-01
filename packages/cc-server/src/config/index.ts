@@ -8,8 +8,6 @@ const EnvSchema = z.object({
   MAX_MCP_OUTPUT_TOKENS: z.coerce.number().int().positive().default(30_000),
   LOG_LEVEL: z.string().min(1).default("info"),
   CLAUDE_PROVIDER: z.string().min(1).default("anthropic"),
-  DAYTONA_API_KEY: z.string().min(1).optional(),
-  DAYTONA_TARGET: z.string().min(1).default("us"),
 });
 
 const normalizedEnv = {
@@ -41,10 +39,6 @@ export const config = {
   },
   execution: {
     maxMcpOutputTokens: env.MAX_MCP_OUTPUT_TOKENS,
-  },
-  daytona: {
-    apiKey: env.DAYTONA_API_KEY,
-    target: env.DAYTONA_TARGET,
   },
   logLevel: env.LOG_LEVEL,
 } as const;

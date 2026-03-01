@@ -4,21 +4,13 @@ import { cors } from "hono/cors";
 import { logger } from "./config/logger";
 import { executeHandler } from "./handlers/execute";
 import { queryHandler } from "./handlers/query";
-import {
-  createSandboxHandler,
-  destroySandboxHandler,
-  proxySandboxExecuteHandler,
-  proxySandboxQueryHandler,
-} from "./handlers/sandbox";
 import { StreamingClaudeExecutor } from "./services/claude-executor";
-import type { SandboxManager } from "./services/sandbox-manager";
 import type { AppEnv } from "./types/hono-env";
 
 const startTime = Date.now();
 
 export function build(
   executor = new StreamingClaudeExecutor(),
-  sandboxManager?: SandboxManager,
 ): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
 
@@ -57,13 +49,6 @@ export function build(
 
   app.post("/execute", executeHandler(executor));
   app.post("/query", queryHandler());
-
-  if (sandboxManager) {
-    app.post("/sandbox", createSandboxHandler(sandboxManager));
-    app.delete("/sandbox/:id", destroySandboxHandler(sandboxManager));
-    app.post("/sandbox/:id/execute", proxySandboxExecuteHandler(sandboxManager));
-    app.post("/sandbox/:id/query", proxySandboxQueryHandler(sandboxManager));
-  }
 
   return app;
 }
