@@ -67,34 +67,21 @@ export class BrowserUseService {
     const data = (await res.json()) as {
       id: string;
       status: string;
-      cdp_url?: string;
-      live_url?: string;
-      timeout_at?: string;
-      started_at?: string;
-      finished_at?: string;
+      cdpUrl?: string;
+      liveUrl?: string;
+      timeoutAt?: string;
+      startedAt?: string;
+      finishedAt?: string;
     };
-
-    let cdpWsUrl: string | null = null;
-    if (data.cdp_url) {
-      try {
-        const cdpRes = await fetch(data.cdp_url);
-        const cdpData = (await cdpRes.json()) as { webSocketDebuggerUrl?: string };
-        cdpWsUrl = cdpData.webSocketDebuggerUrl ?? null;
-      } catch (err) {
-        this.log.warn({ sessionId: id, err }, "Failed to resolve CDP WebSocket URL");
-      }
-    }
-
-    const liveUrl = data.live_url ? `${data.live_url}?theme=light` : null;
 
     return {
       id: data.id,
       status: data.status,
-      cdpWsUrl,
-      liveUrl,
-      timeoutAt: data.timeout_at ?? null,
-      startedAt: data.started_at ?? null,
-      finishedAt: data.finished_at ?? null,
+      cdpWsUrl: data.cdpUrl ?? null,
+      liveUrl: data.liveUrl ? `${data.liveUrl}?theme=light` : null,
+      timeoutAt: data.timeoutAt ?? null,
+      startedAt: data.startedAt ?? null,
+      finishedAt: data.finishedAt ?? null,
     };
   }
 }
