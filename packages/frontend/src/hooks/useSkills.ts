@@ -6,7 +6,9 @@ export interface Skill {
   name: string;
   filename: string;
   description: string | null;
+  content: string;
   created_at: string;
+  updated_at: string;
 }
 
 interface PaginatedSkills {
@@ -16,18 +18,26 @@ interface PaginatedSkills {
   offset: number;
 }
 
-async function fetchSkills(): Promise<PaginatedSkills> {
-  const res = await fetch(`${BACKEND_URL}/api/skills?limit=100`);
+interface UseSkillsParams {
+  limit?: number;
+  offset?: number;
+}
+
+async function fetchSkills(limit: number, offset: number): Promise<PaginatedSkills> {
+  const res = await fetch(`${BACKEND_URL}/api/skills?limit=${limit}&offset=${offset}`);
   if (!res.ok) {
     throw new Error(`Failed to fetch skills: ${res.status}`);
   }
   return res.json();
 }
 
-export function useSkills() {
+export function useSkills(params?: UseSkillsParams) {
+  const limit = params?.limit ?? 100;
+  const offset = params?.offset ?? 0;
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ["skills"],
-    queryFn: fetchSkills,
+    queryKey: ["skills", { limit, offset }],
+    queryFn: () => fetchSkills(limit, offset),
     refetchOnWindowFocus: false,
   });
 
