@@ -1,8 +1,11 @@
 import type { RecordingSession } from "@shared/types";
 
-import { convertToMcp, generateMcpJson } from "./mcp";
+import {
+  convertToAgentBrowser,
+  generateAgentBrowserScript,
+} from "./agent-browser";
 
-export type ExportFormat = "mcp";
+export type ExportFormat = "agent-browser";
 
 export interface ExportResult {
   format: ExportFormat;
@@ -16,21 +19,21 @@ export async function exportRecording(
   format: ExportFormat
 ): Promise<ExportResult> {
   switch (format) {
-    case "mcp":
-      return exportMcp(session);
+    case "agent-browser":
+      return exportAgentBrowser(session);
     default:
       throw new Error(`Unknown format: ${format}`);
   }
 }
 
-function exportMcp(session: RecordingSession): ExportResult {
-  const workflow = convertToMcp(session);
-  const json = generateMcpJson(workflow);
+function exportAgentBrowser(session: RecordingSession): ExportResult {
+  const script = convertToAgentBrowser(session);
+  const content = generateAgentBrowserScript(script);
   return {
-    format: "mcp",
-    content: json,
-    mimeType: "application/json",
-    filename: `${sanitizeFilename(session.name)}.mcp.json`,
+    format: "agent-browser",
+    content,
+    mimeType: "text/x-shellscript",
+    filename: `${sanitizeFilename(session.name)}.sh`,
   };
 }
 
