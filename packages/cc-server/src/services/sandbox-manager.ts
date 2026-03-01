@@ -18,13 +18,10 @@ const CC_SERVER_ROOT = resolve(dirname(import.meta.filename), "..", "..");
 function buildCcServerImage(): Image {
   return Image.base("node:22-slim")
     .runCommands(
-      // System deps + Bun runtime
-      "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq unzip && rm -rf /var/lib/apt/lists/*",
-      "curl -fsSL https://bun.sh/install | bash && ln -s /root/.bun/bin/bun /usr/local/bin/bun",
-      // Install Claude Code CLI globally
-      "npm install -g @anthropic-ai/claude-code",
-      // Install agent-browser for browser automation via CDP
-      "npm install -g agent-browser",
+      // System deps
+      "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq && rm -rf /var/lib/apt/lists/*",
+      // Install Claude Code CLI + agent-browser globally
+      "npm install -g @anthropic-ai/claude-code agent-browser tsx",
       // Create a non-root user — Claude Code refuses --dangerously-skip-permissions as root
       "useradd -m -s /bin/bash claude",
       // Create workspace for Claude Code to operate in
@@ -36,7 +33,7 @@ function buildCcServerImage(): Image {
     .workdir("/app")
     .runCommands(
       // Install cc-server dependencies
-      "bun install --production",
+      "npm install --production",
       // Give the non-root user ownership of /app
       "chown -R claude:claude /app",
     )
@@ -102,7 +99,7 @@ export class SandboxManager {
     const sessionId = `cc-server-${sandbox.id}`;
     await sandbox.process.createSession(sessionId);
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
+      command: "runuser -u claude -- bash -c 'cd /app && npx tsx src/index.ts'",
       runAsync: true,
     });
 
@@ -167,7 +164,7 @@ export class SandboxManager {
       // Session may already exist from previous start
     }
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: "runuser -u claude -- bash -c 'cd /app && bun src/index.ts'",
+      command: "runuser -u claude -- bash -c 'cd /app && npx tsx src/index.ts'",
       runAsync: true,
     });
 
