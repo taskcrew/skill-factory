@@ -261,6 +261,7 @@ export class SandboxManager {
 
   async uploadSkill(
     sandboxId: string,
+    name: string,
     filename: string,
     content: string,
   ): Promise<void> {
@@ -269,7 +270,7 @@ export class SandboxManager {
       throw new Error(`Sandbox ${sandboxId} not found in local registry`);
     }
 
-    const skillDir = `/workspace/.claude/skills/${filename}`;
+    const skillDir = `/workspace/.claude/skills/${name}`;
     await sandbox.process.executeCommand(`mkdir -p ${skillDir}/assets`);
     await sandbox.fs.uploadFile(
       Buffer.from(SKILL_MD_CONTENT, "utf-8"),
@@ -281,7 +282,7 @@ export class SandboxManager {
     );
 
     this.log.info(
-      { sandboxId, filename },
+      { sandboxId, name, filename },
       "Skill uploaded to sandbox",
     );
   }

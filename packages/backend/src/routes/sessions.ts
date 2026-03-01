@@ -138,6 +138,7 @@ sessionsRouter.openapi(createSession, async (c) => {
         if (skill) {
           await sandboxManager.uploadSkill(
             info.sandboxId,
+            skill.name,
             skill.filename,
             skill.content,
           );
