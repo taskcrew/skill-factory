@@ -19,7 +19,6 @@ export class SandboxManager {
   constructor() {
     this.daytona = new Daytona({
       apiKey: config.daytona.apiKey,
-      apiUrl: config.daytona.apiUrl,
       target: config.daytona.target,
     });
   }
