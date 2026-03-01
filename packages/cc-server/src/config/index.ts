@@ -9,7 +9,6 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.string().min(1).default("info"),
   CLAUDE_PROVIDER: z.string().min(1).default("anthropic"),
   DAYTONA_API_KEY: z.string().min(1).optional(),
-  DAYTONA_API_URL: z.string().url().optional(),
   DAYTONA_TARGET: z.string().min(1).default("us"),
 });
 
@@ -45,7 +44,6 @@ export const config = {
   },
   daytona: {
     apiKey: env.DAYTONA_API_KEY,
-    apiUrl: env.DAYTONA_API_URL,
     target: env.DAYTONA_TARGET,
   },
   logLevel: env.LOG_LEVEL,
