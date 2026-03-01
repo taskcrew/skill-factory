@@ -5,7 +5,8 @@ import {
   generateAgentBrowserScript,
 } from "./agent-browser";
 
-export type ExportFormat = "agent-browser";
+export type ExportFormat = "agent-browser" | "raw-events";
+export type { ExportFormat as ExportFormatType };
 
 export interface ExportResult {
   format: ExportFormat;
@@ -21,6 +22,8 @@ export async function exportRecording(
   switch (format) {
     case "agent-browser":
       return exportAgentBrowser(session);
+    case "raw-events":
+      return exportRawEvents(session);
     default:
       throw new Error(`Unknown format: ${format}`);
   }
@@ -34,6 +37,23 @@ function exportAgentBrowser(session: RecordingSession): ExportResult {
     content,
     mimeType: "text/x-shellscript",
     filename: `${sanitizeFilename(session.name)}.sh`,
+  };
+}
+
+function exportRawEvents(session: RecordingSession): ExportResult {
+  const payload = {
+    id: session.id,
+    name: session.name,
+    startTime: session.startTime,
+    endTime: session.endTime,
+    metadata: session.metadata,
+    events: session.events,
+  };
+  return {
+    format: "raw-events",
+    content: JSON.stringify(payload, null, 2),
+    mimeType: "application/json",
+    filename: `${sanitizeFilename(session.name)}_events.json`,
   };
 }
 

@@ -174,7 +174,7 @@ class BackgroundController {
       }
       const exported = await exportRecording(
         session,
-        format as "agent-browser"
+        format as "agent-browser" | "raw-events"
       );
       return { success: true, data: exported };
     } catch (error) {
