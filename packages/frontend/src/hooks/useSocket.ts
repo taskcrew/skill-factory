@@ -2,9 +2,8 @@ import { useEffect, useCallback, useRef } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useChatContext } from "../context/ChatContext.tsx";
 import { useSessionApi } from "./useSessionApi.ts";
+import { BACKEND_URL } from "../config";
 import type { SDKMessage, LifecycleEvent } from "../types/chat.ts";
-
-const BACKEND_URL = import.meta.env?.BACKEND_URL ?? "http://localhost:3001";
 
 // ---------- Hook ----------
 

@@ -1,9 +1,7 @@
 /**
- * Frontend runtime configuration.
- *
- * Bun inlines process.env.PUBLIC_* at serve time via bunfig.toml [serve.static] env.
- * Falls back to window.location.origin port 3001 for dev, or use globalThis.
+ * Bun inlines process.env.PUBLIC_* at bundle time via bunfig.toml [serve.static] env.
+ * The expression must be exactly `process.env.PUBLIC_X` — no typeof guards or
+ * optional chaining, otherwise Bun's bundler won't recognize and replace it.
  */
 export const BACKEND_URL: string =
-  (typeof process !== "undefined" && process.env?.PUBLIC_BACKEND_URL) ||
-  "http://localhost:3001";
+  process.env.PUBLIC_BACKEND_URL || "http://localhost:3001";
