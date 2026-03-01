@@ -12,6 +12,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "@elevenlabs/client": "^0.15.0"
+  },
   "devDependencies": {
 "@types/chrome": "^0.1.32",
     "@types/node": "^22.5.5",

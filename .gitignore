@@ -37,3 +37,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 packages/chrome-extension/dist
 agent-browser-impl.md
 .claude/worktrees/
+voice-detection.md

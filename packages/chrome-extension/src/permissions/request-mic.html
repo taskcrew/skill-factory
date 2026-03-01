@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Microphone Permission</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #1a1a2e;
+        color: #eee;
+      }
+      .container { text-align: center; padding: 40px; }
+      h1 { font-size: 20px; margin-bottom: 12px; }
+      p { color: #888; margin-bottom: 24px; }
+      button {
+        padding: 12px 32px;
+        background: #e94560;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      button:hover { background: #d63850; }
+      .status { font-size: 16px; margin-top: 16px; }
+      .granted { color: #27ae60; }
+      .denied { color: #e94560; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Microphone Access</h1>
+      <p>Click the button below to grant microphone permission for voice recording.</p>
+      <button id="grantBtn">Allow Microphone</button>
+      <div id="status" class="status"></div>
+    </div>
+    <script type="module" src="./request-mic.ts"></script>
+  </body>
+</html>
