@@ -80,6 +80,7 @@ io.on("connection", (socket: Socket) => {
       const reader = upstream.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let currentEvent = "";
       let sawCompletion = false;
 
       try {
@@ -91,8 +92,6 @@ io.on("connection", (socket: Socket) => {
           const lines = buffer.split("\n");
           // Keep the last potentially incomplete line in the buffer
           buffer = lines.pop() ?? "";
-
-          let currentEvent = "";
           for (const line of lines) {
             if (line.startsWith("event: ")) {
               currentEvent = line.slice(7).trim();
