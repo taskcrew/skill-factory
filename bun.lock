@@ -5,6 +5,9 @@
       "name": "skill-factory",
       "dependencies": {
         "@daytonaio/sdk": "^0.148.0",
+        "bun-plugin-tailwind": "^0.1.2",
+        "daisyui": "^5.5.19",
+        "tailwindcss": "^4.2.1",
       },
       "devDependencies": {
         "@types/bun": "latest",
