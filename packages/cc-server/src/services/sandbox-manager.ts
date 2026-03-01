@@ -1,4 +1,5 @@
-import { Daytona, type Sandbox } from "@daytonaio/sdk";
+import { Daytona, Image, type Sandbox } from "@daytonaio/sdk";
+import { resolve, dirname } from "node:path";
 
 import { config } from "../config";
 import { logger } from "../config/logger";
@@ -10,6 +11,33 @@ export type SandboxInfo = {
 };
 
 const CC_SERVER_PORT = 3002;
+
+// Resolve the cc-server package root relative to this file
+const CC_SERVER_ROOT = resolve(dirname(import.meta.filename), "..", "..");
+
+function buildCcServerImage(): Image {
+  return Image.base("oven/bun:1-slim")
+    .runCommands(
+      // System deps needed by Claude Code
+      "apt-get update && apt-get install -y git bash curl python3 python3-venv wget jq && rm -rf /var/lib/apt/lists/*",
+      // Install Claude Code CLI globally — the SDK spawns it as a subprocess
+      "bun install -g @anthropic-ai/claude-code",
+      // Create workspace for Claude Code to operate in
+      "mkdir -p /workspace && chmod 777 /workspace",
+      "mkdir -p /app",
+    )
+    // Add cc-server source into the image
+    .addLocalDir(CC_SERVER_ROOT, "/app")
+    .workdir("/app")
+    .runCommands(
+      // Install cc-server dependencies
+      "bun install --production",
+    )
+    .env({
+      PORT: String(CC_SERVER_PORT),
+      HOST: "0.0.0.0",
+    });
+}
 
 export class SandboxManager {
   private readonly daytona: Daytona;
@@ -30,53 +58,53 @@ export class SandboxManager {
     disk?: number;
     autostopMinutes?: number;
   }): Promise<SandboxInfo> {
-    this.log.info("Creating Daytona sandbox");
+    this.log.info("Creating Daytona sandbox with cc-server image");
 
-    const sandbox = await this.daytona.create({
-      image: "oven/bun:1-slim",
-      language: "typescript",
-      envVars: {
-        ANTHROPIC_API_KEY: config.anthropic.apiKey,
-        PORT: String(CC_SERVER_PORT),
-        HOST: "0.0.0.0",
-        ...opts?.envVars,
+    const sandbox = await this.daytona.create(
+      {
+        image: buildCcServerImage(),
+        language: "typescript",
+        envVars: {
+          ANTHROPIC_API_KEY: config.anthropic.apiKey,
+          ...(config.anthropic.baseUrlOverride
+            ? { ANTHROPIC_BASE_URL_OVERRIDE: config.anthropic.baseUrlOverride }
+            : {}),
+          ...opts?.envVars,
+        },
+        resources: {
+          cpu: opts?.cpu ?? 2,
+          memory: opts?.memory ?? 4,
+          disk: opts?.disk ?? 8,
+        },
+        autoStopInterval: opts?.autostopMinutes ?? 30,
       },
-      resources: {
-        cpu: opts?.cpu ?? 2,
-        memory: opts?.memory ?? 4,
-        disk: opts?.disk ?? 8,
+      {
+        onSnapshotCreateLogs: (chunk) => {
+          this.log.debug({ chunk: chunk.trim() }, "Image build log");
+        },
+        timeout: 300, // 5 min for image build
       },
-      autoStopInterval: opts?.autostopMinutes ?? 30,
-    });
+    );
 
     this.sandboxes.set(sandbox.id, sandbox);
     this.log.info({ sandboxId: sandbox.id }, "Sandbox created");
 
-    // Install system deps, copy cc-server code, install bun deps, start server
-    await sandbox.process.executeCommand(
-      "apt-get update && apt-get install -y git bash curl python3 && rm -rf /var/lib/apt/lists/*",
-    );
-
-    // TODO: Upload cc-server source or pull from registry
-    // For now, assumes the code is available at /app in the sandbox
-    await sandbox.process.executeCommand("bun install --production", "/app");
-
-    // Start cc-server in background using a session
+    // Start cc-server in a background session
     const sessionId = `cc-server-${sandbox.id}`;
     await sandbox.process.createSession(sessionId);
     await sandbox.process.executeSessionCommand(sessionId, {
-      command: `cd /app && PORT=${CC_SERVER_PORT} bun src/index.ts`,
+      command: "cd /app && bun src/index.ts",
       runAsync: true,
     });
 
-    // Wait for server to be ready
+    // Wait for health endpoint to respond
     await this.waitForHealthy(sandbox);
 
     const preview = await sandbox.getPreviewLink(CC_SERVER_PORT);
 
     this.log.info(
       { sandboxId: sandbox.id, url: preview.url },
-      "Sandbox ready",
+      "cc-server running in sandbox",
     );
 
     return {
@@ -116,6 +144,19 @@ export class SandboxManager {
     }
 
     await this.daytona.start(sandbox);
+
+    // Restart cc-server after sandbox resume
+    const sessionId = `cc-server-${sandbox.id}`;
+    try {
+      await sandbox.process.createSession(sessionId);
+    } catch {
+      // Session may already exist from previous start
+    }
+    await sandbox.process.executeSessionCommand(sessionId, {
+      command: "cd /app && bun src/index.ts",
+      runAsync: true,
+    });
+
     await this.waitForHealthy(sandbox);
 
     const preview = await sandbox.getPreviewLink(CC_SERVER_PORT);
@@ -129,9 +170,9 @@ export class SandboxManager {
     };
   }
 
-  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 15_000): Promise<void> {
+  private async waitForHealthy(sandbox: Sandbox, timeoutMs = 30_000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
-    const interval = 500;
+    const interval = 1_000;
 
     while (Date.now() < deadline) {
       try {
