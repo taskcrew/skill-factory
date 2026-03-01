@@ -23,18 +23,25 @@ async function main() {
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      ...(info.previewToken ? { "X-Preview-Token": info.previewToken } : {}),
+      ...(info.previewToken ? { "x-daytona-preview-token": info.previewToken } : {}),
     };
 
     // 2. Health check
     log("HEALTH", `GET ${info.baseUrl}/health`);
     const healthRes = await fetch(`${info.baseUrl}/health`, { headers });
-    const healthBody = await healthRes.json();
-    log("HEALTH OK", { status: healthRes.status, body: healthBody });
+    const healthText = await healthRes.text();
+    log("HEALTH RESPONSE", {
+      status: healthRes.status,
+      contentType: healthRes.headers.get("content-type"),
+      body: healthText.slice(0, 500),
+    });
 
     if (healthRes.status !== 200) {
-      throw new Error(`Health check failed with status ${healthRes.status}`);
+      throw new Error(`Health check failed with status ${healthRes.status}: ${healthText.slice(0, 200)}`);
     }
+
+    const healthBody = JSON.parse(healthText);
+    log("HEALTH OK", healthBody);
 
     // 3. Query
     log("QUERY", `POST ${info.baseUrl}/query`);
@@ -42,16 +49,22 @@ async function main() {
       method: "POST",
       headers,
       body: JSON.stringify({
-        prompt: "What is 2 + 2? Reply with just the number.",
-        options: { maxTurns: 1 },
+        task: "What is 2 + 2? Reply with just the number.",
       }),
     });
-    const queryBody = await queryRes.json();
-    log("QUERY OK", { status: queryRes.status, body: queryBody });
+    const queryText = await queryRes.text();
+    log("QUERY RESPONSE", {
+      status: queryRes.status,
+      contentType: queryRes.headers.get("content-type"),
+      body: queryText.slice(0, 1000),
+    });
 
     if (queryRes.status !== 200) {
-      throw new Error(`Query failed with status ${queryRes.status}`);
+      throw new Error(`Query failed with status ${queryRes.status}: ${queryText.slice(0, 200)}`);
     }
+
+    const queryBody = JSON.parse(queryText);
+    log("QUERY OK", queryBody);
 
     log("ALL TESTS PASSED");
   } catch (err) {
