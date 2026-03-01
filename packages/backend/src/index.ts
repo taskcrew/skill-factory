@@ -1,6 +1,9 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
+import { config } from "./config";
+import { logger } from "./logger";
 import { sessionsRouter } from "./routes/sessions";
+import { SandboxManager } from "./services/sandbox-manager";
 
 const app = new OpenAPIHono();
 
@@ -18,9 +21,11 @@ app.doc31("/api/openapi.json", {
 
 app.get("/api/docs", swaggerUI({ url: "/api/openapi.json" }));
 
+const sandboxManager = new SandboxManager();
+
 const server = Bun.serve({
-  port: Number(process.env.PORT) || 3001,
+  port: config.port,
   fetch: app.fetch,
 });
 
-console.log(`Backend listening on http://localhost:${server.port}`);
+logger.info({ port: server.port }, "Backend listening");

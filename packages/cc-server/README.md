@@ -1,8 +1,8 @@
 # cc-server
 
-HTTP server that runs [Claude Code](https://www.npmjs.com/package/@anthropic-ai/claude-code) sessions inside a [Daytona](https://www.daytona.io/) sandbox. It exposes Claude Code over HTTP with full filesystem access, MCP server support, and streaming.
+HTTP server that runs [Claude Code](https://www.npmjs.com/package/@anthropic-ai/claude-code) sessions. It exposes Claude Code over HTTP with full filesystem access, MCP server support, and streaming.
 
-cc-server is not meant to run on your local machine. It runs **inside** a Daytona sandbox — your backend creates the sandbox and talks to cc-server over the sandbox's exposed port.
+cc-server is designed to run **inside** a Daytona sandbox — your backend creates the sandbox and talks to cc-server over the sandbox's exposed port. See the backend package for sandbox lifecycle management.
 
 ## Architecture
 
@@ -187,69 +187,7 @@ MCP servers can be attached to `/query` and `/execute` requests. They run inside
 
 Supported transport types: `stdio`, `sse`, `http`.
 
-## Sandbox setup
-
-### What's in the image
-
-Each sandbox is a Daytona container built from `oven/bun:1-slim`:
-
-| Layer | Purpose |
-|-------|---------|
-| System packages | git, bash, curl, python3, wget, jq |
-| Claude Code CLI | `bun install -g @anthropic-ai/claude-code` |
-| cc-server source | Copied into `/app` |
-| Non-root `claude` user | Runs cc-server (Claude Code CLI refuses bypass-permissions as root) |
-| `/workspace` | Default working directory for Claude |
-
-### Creating a sandbox
-
-Use the `SandboxManager` class from your backend:
-
-```ts
-import { SandboxManager } from "cc-server/services/sandbox-manager";
-
-const manager = new SandboxManager();
-
-// Create — boots container, starts cc-server, waits for healthy
-const info = await manager.createSandbox({
-  cpu: 2,
-  memory: 4,
-  disk: 8,
-  autostopMinutes: 30,
-  envVars: { MY_VAR: "value" },
-});
-
-console.log(info.sandboxId);    // "8e671212-..."
-console.log(info.baseUrl);      // "https://3002-8e671212-....daytonaproxy01.net"
-console.log(info.previewToken); // "abc123"
-
-// Use — call cc-server endpoints directly
-const res = await fetch(`${info.baseUrl}/query`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "x-daytona-preview-token": info.previewToken,
-  },
-  body: JSON.stringify({ task: "What is 2+2?" }),
-});
-const data = await res.json();
-console.log(data.result); // "4"
-
-// Destroy
-await manager.destroySandbox(info.sandboxId);
-```
-
-### Environment variables
-
-These must be set in your backend's environment (they get forwarded into each sandbox):
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | — | Forwarded into each sandbox for Claude API access |
-| `DAYTONA_API_KEY` | Yes | — | Used by SandboxManager to provision containers |
-| `DAYTONA_TARGET` | No | `us` | Daytona target region |
-
-### cc-server config inside the sandbox
+## cc-server config inside the sandbox
 
 These are set automatically by the image. You don't need to configure them:
 
@@ -257,6 +195,7 @@ These are set automatically by the image. You don't need to configure them:
 |----------|---------|-------------|
 | `PORT` | `3002` | Port cc-server listens on |
 | `HOST` | `0.0.0.0` | Bind address |
+| `ANTHROPIC_API_KEY` | — | Injected at sandbox creation time |
 
 ## Project structure
 
@@ -270,10 +209,8 @@ src/
   handlers/
     query.ts                POST /query — one-shot Claude Code execution
     execute.ts              POST /execute — streaming execution via SSE
-    sandbox.ts              Sandbox proxy handlers (optional, for proxy mode)
   services/
     claude-executor.ts      Streaming Claude Code executor
-    sandbox-manager.ts      Daytona sandbox lifecycle (create/start/stop/destroy)
   shared/
     types.ts                Request/response type definitions
   types/

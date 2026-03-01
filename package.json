@@ -9,7 +9,8 @@
     "dev:cc-server": "bun --hot packages/cc-server/src/index.ts",
     "build:chrome-extension": "bun run --cwd packages/chrome-extension build",
     "docker:cc-server": "docker build -f packages/cc-server/Dockerfile packages/cc-server",
-    "test": "bun test"
+    "test": "bun test",
+    "test:sandbox": "bun packages/backend/scripts/test-sandbox.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
